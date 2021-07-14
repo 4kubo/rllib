@@ -236,6 +236,7 @@ class ModelBasedAgent(AbstractAgent):
         model_lr=5e-4,
         l2_reg=1e-4,
         calibrate=True,
+        with_model_learning=True,
         *args,
         **kwargs,
     ):
@@ -257,7 +258,7 @@ class ModelBasedAgent(AbstractAgent):
             except AttributeError:
                 pass
         params = list(chain(dynamical_model.parameters(), reward_model.parameters()))
-        if len(params):
+        if with_model_learning and len(params) != 0:
             model_optimizer = Adam(params, lr=model_lr, weight_decay=l2_reg)
 
             model_learning_algorithm = ModelLearningAlgorithm(
