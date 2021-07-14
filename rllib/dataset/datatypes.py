@@ -13,6 +13,7 @@ Reward = Union[int, float, Array]
 Probability = Union[int, float, Array]
 Done = Union[bool, Array]
 TupleDistribution = Union[Tensor, Tuple[Tensor, Tensor]]
+Episode = Union[int, Array]
 
 NaN = float("nan")
 
@@ -34,6 +35,7 @@ class Observation:
     state_scale_tril: Tensor = torch.tensor(NaN)
     next_state_scale_tril: Tensor = torch.tensor(NaN)
     reward_scale_tril: Tensor = torch.tensor(NaN)
+    episode_id: Episode = torch.tensor(NaN)
 
     def __iter__(self):
         """Iterate the properties of the observation."""
@@ -122,6 +124,7 @@ class Observation:
             state_scale_tril=torch.tensor(NaN),
             next_state_scale_tril=torch.tensor(NaN),
             reward_scale_tril=torch.tensor(NaN),
+            episode_id=torch.tensor(NaN),
         )
 
     @classmethod
