@@ -46,4 +46,4 @@ class RandomShooting(CEMShooting):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__(num_iter=kwargs.pop("num_iter", 1), *args, **kwargs)
+        super().__init__(num_iter=kwargs.pop("num_mpc_iter", 1), *args, **kwargs)

@@ -30,7 +30,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         Discount factor.
     scale: float, optional.
         Scale of covariance matrix to sample.
-    num_iter: int, optional.
+    num_mpc_iter: int, optional.
         Number of iterations of solver method.
     num_samples: int, optional.
         Number of samples for shooting method.
@@ -51,7 +51,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         reward_model,
         horizon=25,
         gamma=1.0,
-        num_iter=1,
+        num_mpc_iter=1,
         num_samples=400,
         termination_model=None,
         scale=0.3,
@@ -77,7 +77,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         self.horizon = horizon
         self.gamma = gamma
 
-        self.num_iter = num_iter
+        self.num_mpc_iter = num_mpc_iter
         self.num_samples = num_samples
         self.terminal_reward = terminal_reward
         self.warm_start = warm_start
@@ -192,7 +192,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
             action_.share_memory_()
             return_.share_memory_()
 
-        for _ in range(self.num_iter):
+        for _ in range(self.num_mpc_iter):
             run_parallel_returns(
                 self.get_action_sequence_and_returns,
                 [

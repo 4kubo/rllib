@@ -12,7 +12,7 @@ class CEMShooting(MPCSolver):
     r"""Cross Entropy Method solves the MPC problem by adaptively sampling.
 
     The sampling distribution is adapted by fitting a Multivariate Gaussian to the
-    best `num_elites' samples (action sequences) for `num_iter' times.
+    best `num_elites' samples (action sequences) for `num_mpc_iter' times.
 
     Parameters
     ----------
@@ -22,7 +22,7 @@ class CEMShooting(MPCSolver):
         Horizon to solve planning problem.
     gamma: float, optional.
         Discount factor.
-    num_iter: int, optional.
+    num_mpc_iter: int, optional.
         Number of iterations of CEM method.
     num_samples: int, optional.
         Number of samples for shooting method.
@@ -48,8 +48,8 @@ class CEMShooting(MPCSolver):
     The cross-entropy method for optimization. In Handbook of statistics
     """
 
-    def __init__(self, alpha=0.0, num_iter=5, num_elites=None, *args, **kwargs):
-        super().__init__(num_iter=num_iter, *args, **kwargs)
+    def __init__(self, alpha=0.0, num_mpc_iter=5, num_elites=None, *args, **kwargs):
+        super().__init__(num_mpc_iter=num_mpc_iter, *args, **kwargs)
         self.num_elites = (
             max(1, self.num_samples // 10) if not num_elites else num_elites
         )
