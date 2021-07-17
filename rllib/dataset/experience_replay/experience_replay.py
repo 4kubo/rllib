@@ -257,15 +257,23 @@ class ExperienceReplay(data.Dataset):
             transformation.update(observation)
             observation = transformation(observation)
 
-    def sample_batch(self, batch_size):
+    def sample_batch(self, batch_size, device=None):
         """Sample a batch of observations."""
         indices = np.random.choice(self.valid_indexes, batch_size)
         if self.num_steps == 0:
             obs = self._get_observation(indices)
-            return (obs, torch.tensor(indices), self.weights[indices])
+            weights = self.weights[indices]
+            if device is not None:
+                obs = obs.to(device)
+                weights = weights.to(device)
+            return (obs, torch.tensor(indices), weights)
         else:
             obs, idx, weight = default_collate([self[i] for i in indices])
-            return Observation(**obs), idx, weight
+            obs = Observation(**obs)
+            if device is not None:
+                obs = obs.to(device)
+                weight = weight.to(device)
+            return obs, idx, weight
 
     @property
     def is_full(self):

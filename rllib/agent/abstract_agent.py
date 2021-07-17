@@ -16,7 +16,7 @@ from rllib.util.neural_networks.utilities import DisableGradient
 from rllib.util.utilities import save_random_state, tensor_to_distribution
 
 
-class AbstractAgent(object, metaclass=ABCMeta):
+class AbstractAgent(nn.Module, metaclass=ABCMeta):
     """Interface for agents that interact with an environment.
 
     Parameters
@@ -64,6 +64,7 @@ class AbstractAgent(object, metaclass=ABCMeta):
         *args,
         **kwargs,
     ):
+        super().__init__()
         self.logger = Logger(
             self.name if log_dir is None else log_dir,
             tensorboard=tensorboard,
@@ -99,10 +100,6 @@ class AbstractAgent(object, metaclass=ABCMeta):
         self.policy = new_policy
         if self.algorithm is not None:
             self.algorithm.set_policy(new_policy)
-
-    def to(self, device):
-        """Send agent to device."""
-        self.algorithm.to(device=device)
 
     @classmethod
     def default(cls, environment, comment=None, gamma=0.99, *args, **kwargs):
@@ -154,7 +151,9 @@ class AbstractAgent(object, metaclass=ABCMeta):
         if not self.policy.discrete_action:
             action = action.clamp(-1.0, 1.0)
             action = self.policy.action_scale * action
-        return action.detach().to("cpu").numpy()
+        if self.device is not None:
+            action = action.to("cpu")
+        return action.detach().numpy()
 
     def observe(self, observation):
         """Observe transition from the environment.

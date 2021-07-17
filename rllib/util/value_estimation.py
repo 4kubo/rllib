@@ -76,7 +76,9 @@ def discount_cumsum(rewards, gamma=1.0, reward_transformer=RewardTransformer()):
     return val
 
 
-def discount_sum(rewards, gamma=1.0, reward_transformer=RewardTransformer()):
+def discount_sum(
+    rewards, gamma=1.0, reward_transformer=RewardTransformer(), device="cpu"
+):
     r"""Get discounted sum of returns.
 
     Given a vector [r0, r1, r2], the discounted sum is tensor:
@@ -89,6 +91,7 @@ def discount_sum(rewards, gamma=1.0, reward_transformer=RewardTransformer()):
     gamma: float, optional.
         Discount factor.
     reward_transformer: RewardTransformer
+    device: torch.device, optional.
 
     Returns
     -------
@@ -101,13 +104,20 @@ def discount_sum(rewards, gamma=1.0, reward_transformer=RewardTransformer()):
     elif rewards.dim() == 1:
         steps = len(rewards)
         return (
-            torch.pow(gamma * torch.ones(steps), torch.arange(steps)) * rewards
+            torch.pow(
+                gamma * torch.ones(steps, device=device),
+                torch.arange(steps, device=device),
+            )
+            * rewards
         ).sum()
     else:
         steps = rewards.shape[1]
         return torch.einsum(
             "i,ki...->k...",
-            torch.pow(gamma * torch.ones(steps), torch.arange(steps)),
+            torch.pow(
+                gamma * torch.ones(steps, device=device),
+                torch.arange(steps, device=device),
+            ),
             rewards,
         )
 

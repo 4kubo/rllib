@@ -57,13 +57,13 @@ class LargeStateTermination(AbstractModel):
             * self.in_range(other, min_max_range=self.healthy_state_range).all(-1)
         )
 
-    def forward(self, state, action, next_state=None):
+    def forward(self, state, action, next_state=None, device="cpu"):
         """Return termination model logits."""
         if not isinstance(state, torch.Tensor):
             return ~self.is_healthy(state)
         done = ~self.is_healthy(state)
         return (
-            torch.zeros(*done.shape, 2)
+            torch.zeros(*done.shape, 2, device=device)
             .scatter_(dim=-1, index=(~done).long().unsqueeze(-1), value=-float("inf"))
             .squeeze(-1)
         )

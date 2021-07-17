@@ -8,6 +8,7 @@ from torch import Tensor
 from rllib.model import AbstractModel
 from rllib.value_function import AbstractValueFunction
 
+
 class MPCSolver(nn.Module, metaclass=ABCMeta):
     dynamical_model: AbstractModel
     reward_model: AbstractModel

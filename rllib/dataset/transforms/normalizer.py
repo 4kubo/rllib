@@ -13,11 +13,18 @@ class Normalizer(nn.Module):
 
     preserve_orign: bool
 
-    def __init__(self, preserve_origin=False):
+    def __init__(self, shape=None, preserve_origin=False):
         super().__init__()
-        self.mean = torch.zeros(1)
-        self.variance = torch.ones(1)
-        self.count = torch.tensor(0.0)
+        shape = () if shape is None else shape
+        mean = torch.zeros((1,) + shape)
+        variance = torch.ones((1,) + shape)
+        count = torch.tensor(0.0)
+
+        # Not as parameters but should be included in `state_dict`
+        self.register_buffer("mean", mean)
+        self.register_buffer("variance", variance)
+        self.register_buffer("count", count)
+
         self.preserve_origin = preserve_origin
 
     def forward(self, array):
@@ -73,9 +80,10 @@ class StateNormalizer(AbstractTransform):
 
     """
 
-    def __init__(self, preserve_origin=False):
+    def __init__(self, observation_space, preserve_origin=False):
         super().__init__()
-        self._normalizer = Normalizer(preserve_origin)
+        assert isinstance(observation_space, Box)
+        self._normalizer = Normalizer(observation_space.shape, preserve_origin)
 
     def forward(self, observation, **kwargs):
         """See `AbstractTransform.__call__'."""
@@ -115,9 +123,9 @@ class NextStateNormalizer(AbstractTransform):
 
     """
 
-    def __init__(self, preserve_origin=False):
+    def __init__(self, observation_space, preserve_origin=False):
         super().__init__()
-        self._normalizer = Normalizer(preserve_origin)
+        self._normalizer = Normalizer(observation_space.shape, preserve_origin)
 
     def forward(self, observation, **kwargs):
         """See `AbstractTransform.__call__'."""
@@ -149,7 +157,7 @@ class RewardNormalizer(AbstractTransform):
 
     def __init__(self, preserve_origin=False):
         super().__init__()
-        self._normalizer = Normalizer(preserve_origin)
+        self._normalizer = Normalizer(preserve_origin=preserve_origin)
 
     def forward(self, observation, **kwargs):
         """See `AbstractTransform.__call__'."""
@@ -190,9 +198,9 @@ class ActionNormalizer(AbstractTransform):
 
     """
 
-    def __init__(self, preserve_origin=False):
+    def __init__(self, action_space, preserve_origin=False):
         super().__init__()
-        self._normalizer = Normalizer(preserve_origin)
+        self._normalizer = Normalizer(action_space.shape, preserve_origin)
 
     def forward(self, observation, **kwargs):
         """See `AbstractTransform.__call__'."""

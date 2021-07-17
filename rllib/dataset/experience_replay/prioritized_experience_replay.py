@@ -6,7 +6,6 @@ from torch.utils.data._utils.collate import default_collate
 
 from rllib.dataset.datatypes import Observation
 from rllib.util.parameter_decay import Constant, ParameterDecay
-
 from .experience_replay import ExperienceReplay
 
 
@@ -105,11 +104,16 @@ class PrioritizedExperienceReplay(ExperienceReplay):
         num = len(self)
         return self._priorities[:num] / torch.sum(self._priorities[:num])
 
-    def sample_batch(self, batch_size):
+    def sample_batch(self, batch_size, device=None):
         """Get a batch of data."""
         probs = self.probabilities.numpy()
         indices = np.random.choice(len(self), batch_size, p=probs / np.sum(probs))
-        return default_collate([self[i] for i in indices])
+        outputs = default_collate([self[i] for i in indices])
+        # Move to observation onto the 'device' if necessary
+        if device is not None:
+            outputs[0] = outputs[0].to(device)
+            outputs[2].to(device)
+        return outputs
 
     def append(self, observation):
         """Append new observation to the dataset.

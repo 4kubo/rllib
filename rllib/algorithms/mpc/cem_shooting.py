@@ -4,7 +4,6 @@ import torch
 from torch.distributions import MultivariateNormal
 
 from rllib.util.utilities import sample_mean_and_cov
-
 from .abstract_solver import MPCSolver
 
 
@@ -77,6 +76,9 @@ class CEMShooting(MPCSolver):
 
     def update_sequence_generation(self, elite_actions):
         """Update distribution by the empirical mean and covariance of best actions."""
-        new_mean, new_cov = sample_mean_and_cov(elite_actions.transpose(-1, -2))
+        device = None if self.device == "cpu" else self.device
+        new_mean, new_cov = sample_mean_and_cov(
+            elite_actions.transpose(-1, -2), device=device
+        )
         self.mean = self.alpha * self.mean + (1 - self.alpha) * new_mean
         self.covariance = self.alpha * self.covariance + (1 - self.alpha) * new_cov

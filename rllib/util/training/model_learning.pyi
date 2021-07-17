@@ -1,8 +1,8 @@
 """Utility functions for training models."""
 from typing import Optional, Tuple, Union
 
-import torch.nn as nn
 from torch import Tensor
+from torch import device
 from torch.optim.optimizer import Optimizer
 
 from rllib.dataset.datatypes import Observation
@@ -12,6 +12,7 @@ from rllib.model.ensemble_model import EnsembleModel
 from rllib.model.gp_model import ExactGPModel
 from rllib.model.nn_model import NNModel
 from rllib.util.logger import Logger
+
 
 def train_nn_step(
     model: NNModel,
@@ -26,16 +27,17 @@ def train_exact_gp_type2mll_step(
     model: ExactGPModel, observation: Observation, optimizer: Optimizer
 ) -> Tensor: ...
 def train_model(
-    model: AbstractModel,
-    train_set: ExperienceReplay,
-    optimizer: Optimizer,
-    batch_size: int = ...,
-    num_epochs: Optional[int] = ...,
-    max_iter: int = ...,
-    epsilon: float = ...,
-    non_decrease_iter: int = ...,
-    logger: Optional[Logger] = ...,
-    validation_set: Optional[ExperienceReplay] = ...,
+        model: AbstractModel,
+        train_set: ExperienceReplay,
+        optimizer: Optimizer,
+        batch_size: int = ...,
+        num_epochs: Optional[int] = ...,
+        max_iter: int = ...,
+        epsilon: float = ...,
+        non_decrease_iter: int = ...,
+        logger: Optional[Logger] = ...,
+        validation_set: Optional[ExperienceReplay] = ...,
+        device: device = ...,
 ) -> None: ...
 def calibrate_model(
     model: AbstractModel,

@@ -59,6 +59,7 @@ class ModelBasedAgent(AbstractAgent):
         memory=None,
         batch_size=100,
         clip_grad_val=10.0,
+        state_keys=None,
         *args,
         **kwargs,
     ):
@@ -102,6 +103,12 @@ class ModelBasedAgent(AbstractAgent):
         else:
             policy = RandomPolicy(dynamical_model.dim_state, dynamical_model.dim_action)
         self.policy = policy
+        self.state_keys = (
+            ["dynamical_model", "reward_model", "termination_model", "policy"]
+            if state_keys is None
+            else state_keys
+        )
+
         self.thompson_sampling = thompson_sampling
 
         if self.thompson_sampling:
@@ -131,9 +138,7 @@ class ModelBasedAgent(AbstractAgent):
         else:
             action = super().act(state)
 
-        return action.clip(
-            -self.policy.action_scale.numpy(), self.policy.action_scale.numpy()
-        )
+        return action
 
     def observe(self, observation):
         """Observe a new transition.
@@ -281,3 +286,25 @@ class ModelBasedAgent(AbstractAgent):
             *args,
             **kwargs,
         )
+
+    def state_dict(self):
+        tmp_state_dict = super(ModelBasedAgent, self).state_dict()
+
+        def condition(key):
+            return any(key.startswith(model_kind) for model_kind in self.state_keys)
+
+        state_dict = {
+            key: value for key, value in tmp_state_dict.items() if condition(key)
+        }
+        return state_dict
+
+    def load_state_dict(self, state_dict):
+        for state_key in self.state_keys:
+            model = getattr(self, state_key)
+            if model is not None:
+                model_state_dict = {
+                    key.lstrip(f"{state_key}."): value
+                    for key, value in state_dict.items()
+                    if key.startswith(f"{state_key}.")
+                }
+                model.load_state_dict(model_state_dict)

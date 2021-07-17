@@ -1,7 +1,7 @@
 from typing import Callable, List, Optional, Tuple, Union
 
 from numpy import ndarray
-from torch import Tensor
+from torch import Tensor, device
 from torch.distributions import Distribution
 
 from rllib.agent import AbstractAgent
@@ -9,6 +9,7 @@ from rllib.dataset.datatypes import Action, Observation, State, Trajectory
 from rllib.environment import AbstractEnvironment
 from rllib.model import AbstractModel
 from rllib.policy import AbstractPolicy
+
 
 def step_env(
     environment: AbstractEnvironment,
@@ -19,14 +20,15 @@ def step_env(
     render: bool = ...,
 ) -> Tuple[Observation, Union[int, ndarray], bool, dict]: ...
 def step_model(
-    dynamical_model: AbstractModel,
-    reward_model: AbstractModel,
-    termination_model: AbstractModel,
-    state: Tensor,
-    action: Tensor,
-    done: Optional[Tensor] = ...,
-    action_scale: Action = 1.0,
-    pi: Optional[Distribution] = ...,
+        dynamical_model: AbstractModel,
+        reward_model: AbstractModel,
+        termination_model: AbstractModel,
+        state: Tensor,
+        action: Tensor,
+        done: Optional[Tensor] = ...,
+        action_scale: Action = 1.0,
+        pi: Optional[Distribution] = ...,
+        device: device = ...,
 ) -> Tuple[Observation, Tensor, Tensor]: ...
 def record(
     environment: AbstractEnvironment,

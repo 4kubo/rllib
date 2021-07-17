@@ -1,13 +1,13 @@
 from typing import NamedTuple, Optional
 
-from torch import Tensor
+from torch import Tensor, device
 
 from rllib.dataset.datatypes import Array, Observation, State
 from rllib.model import AbstractModel
 from rllib.policy import AbstractPolicy
 from rllib.value_function import AbstractValueFunction
-
 from .utilities import RewardTransformer
+
 
 class MBValueReturn(NamedTuple):
     value_estimate: Tensor
@@ -23,7 +23,9 @@ def discount_cumsum(
     rewards: Array, gamma: float = ..., reward_transformer: RewardTransformer = ...
 ) -> Array: ...
 def discount_sum(
-    rewards: Tensor, gamma: float = ..., reward_transformer: RewardTransformer = ...,
+        rewards: Tensor, gamma: float = ...,
+        reward_transformer: RewardTransformer = ...,
+        device: device = ...,
 ) -> Array: ...
 def n_step_return(
     observation: Observation,

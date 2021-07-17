@@ -1,6 +1,7 @@
 from abc import ABCMeta
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
+import torch.nn as nn
 from torch import Tensor
 from torch.distributions import Distribution
 from torch.optim.optimizer import Optimizer
@@ -15,7 +16,8 @@ from rllib.util.parameter_decay import ParameterDecay
 
 T = TypeVar("T", bound="AbstractAgent")
 
-class AbstractAgent(object, metaclass=ABCMeta):
+
+class AbstractAgent(nn.Module, metaclass=ABCMeta):
     policy: AbstractPolicy
     algorithm: AbstractAlgorithm
     optimizer: Optimizer

@@ -54,6 +54,7 @@ def step_model(
     done=None,
     action_scale=1.0,
     pi=None,
+    device="cpu",
 ):
     """Perform a single step in an dynamical model."""
     # Sample a next state
@@ -74,13 +75,15 @@ def step_model(
     else:
         reward = reward_distribution.sample().squeeze(-1)
     if done is None:
-        done = torch.zeros_like(reward).bool()
+        done = torch.zeros_like(reward, device=device).bool()
     reward *= (~done).float()
 
     # Check for termination.
     if termination_model is not None:
         done = done + (  # "+" is a boolean "or".
-            tensor_to_distribution(termination_model(state, action, next_state))
+            tensor_to_distribution(
+                termination_model(state, action, next_state, device=device)
+            )
             .sample()
             .bool()
         )
@@ -363,6 +366,7 @@ def rollout_actions(
     action_sequence,
     initial_state,
     termination_model=None,
+    device=None,
 ):
     """Conduct a rollout of an action sequence interacting with a model.
 
@@ -380,6 +384,7 @@ def rollout_actions(
         The dimensions are [1 x num_samples x dim_state].
     termination_model: Callable.
         Termination condition to finish the rollout.
+    device: torch.device.
 
     Returns
     -------
@@ -393,7 +398,9 @@ def rollout_actions(
     trajectory = list()
     state = initial_state
     done = torch.full(state.shape[:-1], False, dtype=torch.bool)
-
+    if device is not None:
+        state = state.to(device)
+        done = done.to(device)
     for action in action_sequence:  # Normalized actions
 
         observation, next_state, done = step_model(
@@ -404,6 +411,7 @@ def rollout_actions(
             action=action,
             action_scale=1.0,
             done=done,
+            device=device,
         )
         trajectory.append(observation)
 

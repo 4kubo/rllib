@@ -11,7 +11,6 @@ from rllib.util.early_stopping import EarlyStopping
 from rllib.util.gaussian_processes.mlls import exact_mll
 from rllib.util.logger import Logger
 from rllib.util.utilities import tensor_to_distribution
-
 from .utilities import calibration_score, model_loss, model_mse, sharpness
 
 
@@ -100,6 +99,7 @@ def train_model(
     non_decrease_iter=float("inf"),
     logger=None,
     validation_set=None,
+    device=None,
 ):
     """Train a Predictive Model.
 
@@ -126,6 +126,7 @@ def train_model(
         Progress logger.
     validation_set: ExperienceReplay, optional.
         Dataset to validate with.
+    device: torch.device.
     """
     if logger is None:
         logger = Logger(f"{model.name}_training", tensorboard=True)
@@ -140,10 +141,10 @@ def train_model(
     early_stopping = EarlyStopping(epsilon, non_decrease_iter=non_decrease_iter)
 
     for _ in tqdm(range(max_iter)):
-        observation, idx, mask = train_set.sample_batch(batch_size)
+        observation, idx, mask = train_set.sample_batch(batch_size, device)
         _train_model_step(model, observation, optimizer, mask, logger)
 
-        observation, idx, mask = validation_set.sample_batch(batch_size)
+        observation, idx, mask = validation_set.sample_batch(batch_size, device)
         with torch.no_grad():
             mse = _validate_model_step(model, observation, logger)
         early_stopping.update(mse)

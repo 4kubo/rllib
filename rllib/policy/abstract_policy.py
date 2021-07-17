@@ -80,7 +80,7 @@ class AbstractPolicy(nn.Module, metaclass=ABCMeta):
             extra_dim = self.dim_action[0] - len(action_scale)
             action_scale = torch.cat((action_scale, torch.ones(extra_dim)))
 
-        self.action_scale = action_scale
+        self.register_buffer("action_scale", action_scale)
         self.goal = goal
 
     @property
@@ -108,19 +108,19 @@ class AbstractPolicy(nn.Module, metaclass=ABCMeta):
         """
         if self.discrete_action:  # Categorical
             if batch_size is None:
-                return torch.ones(self.num_actions)
+                return torch.ones(self.num_actions, device=self.device)
             else:
-                return torch.ones(*batch_size, self.num_actions)
+                return torch.ones(*batch_size, self.num_actions, device=self.device)
         else:
-            cov = torch.eye(self.dim_action[0])
+            cov = torch.eye(self.dim_action[0], device=self.device)
             if not normalized:
                 cov *= self.action_scale
 
             if batch_size is None:
-                return torch.zeros(self.dim_action[0]), cov
+                return torch.zeros(self.dim_action[0], device=self.device), cov
             else:
                 return (
-                    torch.zeros(*batch_size, self.dim_action[0]),
+                    torch.zeros(*batch_size, self.dim_action[0], device=self.device),
                     cov.expand(*batch_size, self.dim_action[0], self.dim_action[0]),
                 )
 
@@ -153,3 +153,11 @@ class AbstractPolicy(nn.Module, metaclass=ABCMeta):
             *args,
             **kwargs,
         )
+
+    @property
+    def device(self):
+        if hasattr(self, "_device"):
+            return self._device
+        else:
+            self._device = self.action_scale.device
+            return self._device

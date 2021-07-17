@@ -11,7 +11,6 @@ from rllib.dataset.transforms import (
     RewardNormalizer,
     StateNormalizer,
 )
-
 from .abstract_model import AbstractModel
 from .ensemble_model import EnsembleModel
 
@@ -31,7 +30,7 @@ class TransformedModel(AbstractModel):
         )
         self.base_model = base_model
         self.forward_transformations = nn.ModuleList(transformations)
-        self.reverse_transformations = nn.ModuleList(list(reversed(transformations)))
+        self.reverse_transformations = list(reversed(transformations))
 
     @classmethod
     def default(
@@ -63,10 +62,10 @@ class TransformedModel(AbstractModel):
             if not base_model.discrete_state:
                 transformations = [
                     MeanFunction(DeltaState()),
-                    StateNormalizer(),
+                    StateNormalizer(environment.observation_space),
                     ActionScaler(scale=environment.action_scale),
                     RewardNormalizer(),
-                    NextStateNormalizer(),
+                    NextStateNormalizer(environment.observation_space),
                 ]
             else:
                 transformations = []

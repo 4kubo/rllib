@@ -246,7 +246,7 @@ def get_entropy_and_log_p(pi, action, action_scale):
     return entropy, log_p
 
 
-def sample_mean_and_cov(sample, diag=False):
+def sample_mean_and_cov(sample, diag=False, device=None):
     """Compute mean and covariance of a sample of vectors.
 
     Parameters
@@ -256,6 +256,7 @@ def sample_mean_and_cov(sample, diag=False):
     diag: bool, optional.
         Flag to indicate if the computation has to assume independent or correlated
         variables.
+    device: torch.device.
 
     Returns
     -------
@@ -272,7 +273,10 @@ def sample_mean_and_cov(sample, diag=False):
         covariance = torch.diag_embed(sample.var(-1))
     else:
         sigma = (mean - sample) @ (mean - sample).transpose(-2, -1)
-        sigma += 1e-6 * torch.eye(sigma.shape[-1])  # Add some jitter.
+        jitter = 1e-6 * torch.eye(sigma.shape[-1])
+        if device is not None:
+            jitter = jitter.to(device)
+        sigma += jitter  # Add some jitter.
         covariance = sigma / num_samples
     mean = mean.squeeze(-1)
 

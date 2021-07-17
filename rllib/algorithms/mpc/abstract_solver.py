@@ -7,7 +7,6 @@ import torch
 import torch.nn as nn
 
 from rllib.dataset.utilities import stack_list_of_tuples
-from rllib.util.multiprocessing import run_parallel_returns
 from rllib.util.neural_networks.utilities import repeat_along_dimension
 from rllib.util.rollout import rollout_actions
 from rllib.util.value_estimation import discount_sum
@@ -97,7 +96,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
             extra_dim = self.dim_action - len(action_scale)
             action_scale = torch.cat((action_scale, torch.ones(extra_dim)))
 
-        self.action_scale = action_scale
+        self.register_buffer("action_scale", action_scale)
         self.clamp = clamp
         self.num_cpu = num_cpu
 
@@ -114,12 +113,13 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
             dim=-2,
         )
 
-        returns = discount_sum(trajectory.reward, self.gamma)
+        observations = stack_list_of_tuples(trajectory, dim=-2)
+        returns = discount_sum(observations.reward, self.gamma, device=self.device)
 
         if self.terminal_reward:
-            terminal_reward = self.terminal_reward(trajectory.next_state[..., -1, :])
+            terminal_reward = self.terminal_reward(observations.next_state[..., -1, :])
             returns = returns + self.gamma ** self.horizon * terminal_reward
-        return returns
+        return returns, trajectory
 
     @abstractmethod
     def get_candidate_action_sequence(self):
@@ -148,12 +148,15 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
                 final_action = torch.mean(next_mean, dim=0, keepdim=True)
             else:
                 raise NotImplementedError
-            self.mean = torch.cat((next_mean, final_action), dim=0)
+            self.mean = torch.cat((next_mean, final_action), dim=0).to(self.device)
         else:
-            self.mean = torch.zeros(self.horizon, *batch_shape, self.dim_action)
-        self.covariance = (self._scale ** 2) * torch.eye(self.dim_action).repeat(
+            self.mean = torch.zeros(
+                self.horizon, *batch_shape, self.dim_action, device=self.device
+            )
+        covariance = (self._scale ** 2) * torch.eye(self.dim_action).repeat(
             self.horizon, *batch_shape, 1, 1
         )
+        self.covariance = covariance.to(self.device)
 
     def get_action_sequence_and_returns(
         self, state, action_sequence, returns, process_nr=0
@@ -179,38 +182,33 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
 
         state = repeat_along_dimension(state, number=self.num_samples, dim=-2)
 
-        batch_actions = [
-            torch.randn(
-                (self.horizon,) + batch_shape + (self.num_samples, self.dim_action)
-            )
-            for _ in range(self.num_cpu)
-        ]
-        batch_returns = [
-            torch.randn(batch_shape + (self.num_samples,)) for _ in range(self.num_cpu)
-        ]
-        for action_, return_ in zip(batch_actions, batch_returns):
-            action_.share_memory_()
-            return_.share_memory_()
-
         for _ in range(self.num_mpc_iter):
-            run_parallel_returns(
-                self.get_action_sequence_and_returns,
-                [
-                    (state, batch_actions[rank], batch_returns[rank], rank)
-                    for rank in range(self.num_cpu)
-                ],
-                num_cpu=self.num_cpu,
+            action_candidates = self.get_candidate_action_sequence()
+            returns, trajectory = self.evaluate_action_sequence(
+                action_candidates, state
             )
-            action_sequence = torch.cat(batch_actions, dim=-2)
-            returns = torch.cat(batch_returns, dim=-1)
-            elite_actions = self.get_best_action(action_sequence, returns)
+            elite_actions = self.get_best_action(action_candidates, returns)
             self.update_sequence_generation(elite_actions)
 
         if self.clamp:
-            return self.mean.clamp(-1.0, 1.0)
+            return self.mean.clamp(-1.0, 1.0), returns, trajectory
 
-        return self.mean
+        return self.mean, returns, trajectory
+
+    def state_dict(self, destination=None, prefix="", keep_vars=False):
+        return {}
+
+    def load_state_dict(self, state_dict, strict=True):
+        pass
 
     def reset(self, warm_action=None):
         """Reset warm action."""
         self.mean = warm_action
+
+    @property
+    def device(self):
+        if hasattr(self, "_device"):
+            return self._device
+        else:
+            self._device = self.action_scale.device
+            return self._device

@@ -5,7 +5,6 @@ import torch.jit
 import torch.nn as nn
 
 from rllib.util.utilities import safe_cholesky
-
 from .utilities import inverse_softplus, parse_layers, update_parameters
 
 
@@ -54,15 +53,17 @@ class FeedForwardNN(nn.Module):
         self.squashed_output = squashed_output
         self.log_scale = log_scale
         if self.log_scale:
-            self._init_scale_transformed = torch.log(torch.tensor([initial_scale]))
+            init_scale_transformed = torch.log(torch.tensor([initial_scale]))
             self._min_scale = -4
             self._max_scale = 15
         else:
-            self._init_scale_transformed = inverse_softplus(
-                torch.tensor([initial_scale])
-            )
+            init_scale_transformed = inverse_softplus(torch.tensor([initial_scale]))
             self._min_scale = 1e-6
             self._max_scale = 1
+
+        self._init_scale_transformed = nn.Parameter(
+            init_scale_transformed, requires_grad=False
+        )
 
     @classmethod
     def from_other(cls, other, copy=True):
@@ -248,6 +249,11 @@ class Ensemble(HeteroGaussianNN):
         out_dim,
         num_heads,
         prediction_strategy="moment_matching",
+        layers=(),
+        non_linearity="Tanh",
+        biased_head=True,
+        squashed_output=False,
+        initial_scale=0.5,
         deterministic=True,
         *args,
         **kwargs,
