@@ -1,11 +1,10 @@
 """Implementation of a Transformation that normalizes attributes."""
-
 import torch
 import torch.jit
 import torch.nn as nn
+from gym.spaces import Box
 
 from rllib.dataset.transforms.utilities import rescale, update_mean, update_var
-
 from .abstract_transform import AbstractTransform
 
 
@@ -78,7 +77,7 @@ class StateNormalizer(AbstractTransform):
         super().__init__()
         self._normalizer = Normalizer(preserve_origin)
 
-    def forward(self, observation):
+    def forward(self, observation, **kwargs):
         """See `AbstractTransform.__call__'."""
         scale = torch.diag_embed(1 / torch.sqrt(self._normalizer.variance))
         observation.state = self._normalizer(observation.state)
@@ -120,7 +119,7 @@ class NextStateNormalizer(AbstractTransform):
         super().__init__()
         self._normalizer = Normalizer(preserve_origin)
 
-    def forward(self, observation):
+    def forward(self, observation, **kwargs):
         """See `AbstractTransform.__call__'."""
         scale = torch.diag_embed(1 / torch.sqrt(self._normalizer.variance))
         observation.next_state = self._normalizer(observation.next_state)
@@ -152,7 +151,7 @@ class RewardNormalizer(AbstractTransform):
         super().__init__()
         self._normalizer = Normalizer(preserve_origin)
 
-    def forward(self, observation):
+    def forward(self, observation, **kwargs):
         """See `AbstractTransform.__call__'."""
         scale = torch.diag_embed(1 / torch.sqrt(self._normalizer.variance))
         observation.reward = self._normalizer(observation.reward)
@@ -195,7 +194,7 @@ class ActionNormalizer(AbstractTransform):
         super().__init__()
         self._normalizer = Normalizer(preserve_origin)
 
-    def forward(self, observation):
+    def forward(self, observation, **kwargs):
         """See `AbstractTransform.__call__'."""
         observation.action = self._normalizer(observation.action)
         return observation

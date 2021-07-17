@@ -26,21 +26,21 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
     _scale: float
     covariance: Tensor
     def __init__(
-        self,
-        dynamical_model: AbstractModel,
-        reward_model: AbstractModel,
-        horizon: int = ...,
-        gamma: float = ...,
-        scale: float = ...,
-        num_iter: int = ...,
-        num_samples: Optional[int] = ...,
-        termination_model: Optional[AbstractModel] = ...,
-        terminal_reward: Optional[AbstractValueFunction] = ...,
-        warm_start: bool = ...,
-        default_action: str = ...,
-        action_scale: float = ...,
-        clamp: bool = ...,
-        num_cpu: int = ...,
+            self,
+            dynamical_model: AbstractModel,
+            reward_model: AbstractModel,
+            horizon: int = ...,
+            gamma: float = ...,
+            scale: float = ...,
+            num_mpc_iter: int = ...,
+            num_samples: Optional[int] = ...,
+            termination_model: Optional[AbstractModel] = ...,
+            terminal_reward: Optional[AbstractValueFunction] = ...,
+            warm_start: bool = ...,
+            default_action: str = ...,
+            action_scale: float = ...,
+            clamp: bool = ...,
+            num_cpu: int = ...,
     ) -> None: ...
     def evaluate_action_sequence(
         self, action_sequence: Tensor, state: Tensor

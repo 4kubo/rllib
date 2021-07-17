@@ -97,7 +97,8 @@ class AbstractAgent(object, metaclass=ABCMeta):
     def set_policy(self, new_policy):
         """Set policy."""
         self.policy = new_policy
-        self.algorithm.set_policy(new_policy)
+        if self.algorithm is not None:
+            self.algorithm.set_policy(new_policy)
 
     def to(self, device):
         """Send agent to device."""
