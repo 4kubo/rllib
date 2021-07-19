@@ -158,9 +158,9 @@ class ModelBasedAgent(AbstractAgent):
         ):
             self.learn()
 
-    def start_episode(self):
+    def start_episode(self, state=None):
         """See `AbstractAgent.start_episode'."""
-        super().start_episode()
+        super().start_episode(state)
 
         if self.thompson_sampling:
             self.dynamical_model.sample_posterior()

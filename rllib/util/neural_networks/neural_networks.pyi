@@ -1,6 +1,6 @@
 """Implementation of different Neural Networks with pytorch."""
 
-from typing import Any, Dict, Optional, Sequence, Tuple, Type, TypeVar
+from typing import Any, Dict, Optional, Sequence, Tuple, Type, TypeVar, List
 
 import torch.nn as nn
 from torch import Tensor
@@ -61,16 +61,24 @@ class Ensemble(HeteroGaussianNN):
         *args: Any,
         **kwargs: Any,
     ) -> None: ...
+
     @classmethod
     def from_feedforward(
-        cls: Type[T],
-        other: FeedForwardNN,
-        num_heads: int,
-        prediction_strategy: str = ...,
+            cls: Type[T],
+            other: FeedForwardNN,
+            num_heads: int,
+            prediction_strategy: str = ...,
     ) -> T: ...
+
     def forward(self, *args: Tensor, **kwargs: Any) -> Tuple[Tensor, Tensor]: ...
+
     def set_head(self, new_head: int) -> None: ...
+
     def get_head(self) -> int: ...
+
+    def set_prediction_strategy(
+            self, prediction: str, shape: Optional[List[int]] = ...
+    ) -> None: ...
 
 class FelixNet(FeedForwardNN):
     _scale: nn.Linear

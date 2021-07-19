@@ -125,7 +125,7 @@ class AbstractPolicy(nn.Module, metaclass=ABCMeta):
                 )
 
     @torch.jit.export
-    def reset(self):
+    def reset(self, state=None):
         """Reset policy parameters (for example internal states)."""
         pass
 

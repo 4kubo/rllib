@@ -74,9 +74,10 @@ def _validate_model_step(model, observation, logger):
         observation = Observation(**observation)
     observation.action = observation.action[..., : model.dim_action[0]]
 
-    mse = model_mse(model, observation).item()
-    sharpness_ = sharpness(model, observation).item()
-    calibration_score_ = calibration_score(model, observation).item()
+    with PredictionStrategy(model, prediction_strategy="moment_matching"):
+        mse = model_mse(model, observation).item()
+        sharpness_ = sharpness(model, observation).item()
+        calibration_score_ = calibration_score(model, observation).item()
 
     logger.update(
         **{
@@ -268,7 +269,9 @@ def evaluate_model(model, observation, logger=None):
 
     model.eval()
 
-    with torch.no_grad():
+    with torch.no_grad(), PredictionStrategy(
+        model, prediction_strategy="moment_matching"
+    ):
         loss = model_loss(model, observation).mean().item()
         mse = model_mse(model, observation).item()
         sharpness_ = sharpness(model, observation).item()

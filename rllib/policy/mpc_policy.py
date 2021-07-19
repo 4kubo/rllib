@@ -3,7 +3,6 @@
 import torch
 
 from rllib.algorithms.mpc.cem_shooting import CEMShooting
-from rllib.model.utilities import PredictionStrategy
 from .abstract_policy import AbstractPolicy
 
 
@@ -27,16 +26,16 @@ class MPCPolicy(AbstractPolicy):
 
     def forward(self, state, **kwargs):
         """Solve the MPC problem."""
-        action_sequence = self.solver(state)
+        action_sequence = self.solver(state)[0]
         # Return first Step.
         return (
             action_sequence[0, ..., :],
             torch.zeros(self.dim_action[0], self.dim_action[0]),
         )
 
-    def reset(self):
+    def reset(self, state=None):
         """Re-set last_action to None."""
-        self.solver.reset()
+        self.solver.reset(state)
 
     def set_goal(self, goal=None):
         """Set goal."""

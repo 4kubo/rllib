@@ -5,7 +5,6 @@ import torch
 import torch.jit
 
 from rllib.util.neural_networks import Ensemble
-
 from .nn_model import NNModel
 from .utilities import PredictionStrategy
 
@@ -37,6 +36,8 @@ class EnsembleModel(NNModel):
     ):
         super().__init__(deterministic=False, *args, **kwargs)
         self.num_heads = num_heads
+        self.prediction_strategy = prediction_strategy
+        self.deterministic = deterministic
 
         self.nn = torch.nn.ModuleList(
             [
@@ -89,10 +90,10 @@ class EnsembleModel(NNModel):
         return self.nn[0].get_head_idx()
 
     @torch.jit.export
-    def set_prediction_strategy(self, prediction: str):
+    def set_prediction_strategy(self, prediction: str, shape=None):
         """Set ensemble prediction strategy."""
         for nn in self.nn:
-            nn.set_prediction_strategy(prediction)
+            nn.set_prediction_strategy(prediction, shape=shape)
 
     @torch.jit.export
     def get_prediction_strategy(self) -> str:

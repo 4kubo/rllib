@@ -116,8 +116,17 @@ class AbstractModel(nn.Module, metaclass=ABCMeta):
         """Sample a model from the (approximate) posterior."""
         pass
 
-    def set_prediction_strategy(self, val: str):
-        """Set prediction strategy of model."""
+    def set_prediction_strategy(self, val: str, shape=None):
+        """Set prediction strategy of model.
+
+        Parameters
+        ----------
+        val: str
+            Prediction strategy of model.
+        shape: Sequence[int]
+            When prediction strategy is ts_inf or ts_one, shape of samples should be
+            specified
+        """
         pass
 
     def set_head(self, head_ptr: int):

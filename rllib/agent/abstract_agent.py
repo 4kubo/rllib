@@ -173,9 +173,9 @@ class AbstractAgent(nn.Module, metaclass=ABCMeta):
         self.last_trajectory.append(observation)
         observation.to(self.device)
 
-    def start_episode(self):
+    def start_episode(self, state=None):
         """Start a new episode."""
-        self.policy.reset()
+        self.policy.reset(state)
         self.last_trajectory = []
 
         self.episode_steps.append(0)

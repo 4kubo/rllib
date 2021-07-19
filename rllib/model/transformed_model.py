@@ -45,9 +45,7 @@ class TransformedModel(AbstractModel):
         """See AbstractModel.default()."""
         if base_model is None:
             if model_kind == "dynamics":
-                base_model = EnsembleModel.default(
-                    environment, deterministic=True, *args, **kwargs
-                )
+                base_model = EnsembleModel.default(environment, *args, **kwargs)
             elif model_kind == "rewards":
                 base_model = EnsembleModel.default(
                     environment,
@@ -82,9 +80,9 @@ class TransformedModel(AbstractModel):
         """Sample a posterior from the base model."""
         self.base_model.sample_posterior()
 
-    def set_prediction_strategy(self, val: str) -> None:
+    def set_prediction_strategy(self, val: str, shape=None) -> None:
         """Set prediction strategy."""
-        self.base_model.set_prediction_strategy(val)
+        self.base_model.set_prediction_strategy(val, shape=shape)
 
     def forward(self, state, action, next_state=None):
         """Predict next state distribution."""

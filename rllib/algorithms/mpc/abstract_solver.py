@@ -98,19 +98,16 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
 
         self.register_buffer("action_scale", action_scale)
         self.clamp = clamp
-        self.num_cpu = num_cpu
 
     def evaluate_action_sequence(self, action_sequence, state):
         """Evaluate action sequence by performing a rollout."""
-        trajectory = stack_list_of_tuples(
-            rollout_actions(
-                self.dynamical_model,
-                self.reward_model,
-                self.action_scale * action_sequence,  # scale actions.
-                state,
-                self.termination_model,
-            ),
-            dim=-2,
+        trajectory = rollout_actions(
+            self.dynamical_model,
+            self.reward_model,
+            self.action_scale.data * action_sequence,  # scale actions.
+            state,
+            self.termination_model,
+            device=self.device,
         )
 
         observations = stack_list_of_tuples(trajectory, dim=-2)
@@ -182,6 +179,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
 
         state = repeat_along_dimension(state, number=self.num_samples, dim=-2)
 
+        returns, trajectory = None, None
         for _ in range(self.num_mpc_iter):
             action_candidates = self.get_candidate_action_sequence()
             returns, trajectory = self.evaluate_action_sequence(
@@ -201,9 +199,21 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
     def load_state_dict(self, state_dict, strict=True):
         pass
 
-    def reset(self, warm_action=None):
+    def reset(self, state=None, warm_action=None):
         """Reset warm action."""
         self.mean = warm_action
+        # Set prediction strategy for trajectory sampling
+        if state is not None:
+            assert isinstance(state, np.ndarray)
+            prop_type = self.dynamical_model.get_prediction_strategy()
+            if state.ndim == 1:
+                dims_sample = list(state.shape)
+                sample_shape = [self.num_samples] + dims_sample
+            else:
+                n_batch = state.shape[0]
+                dims_sample = list(state.shape[1:])
+                sample_shape = [n_batch, self.num_samples] + dims_sample
+            self.dynamical_model.set_prediction_strategy(prop_type, sample_shape)
 
     @property
     def device(self):

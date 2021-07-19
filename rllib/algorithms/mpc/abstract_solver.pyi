@@ -1,10 +1,11 @@
 from abc import ABCMeta, abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, Tuple, List
 
 import torch
 import torch.nn as nn
 from torch import Tensor
 
+from rllib.dataset.datatypes import State, Observation
 from rllib.model import AbstractModel
 from rllib.value_function import AbstractValueFunction
 
@@ -43,16 +44,28 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
             clamp: bool = ...,
             num_cpu: int = ...,
     ) -> None: ...
+
     def evaluate_action_sequence(
-        self, action_sequence: Tensor, state: Tensor
-    ) -> Tensor: ...
+            self, action_sequence: Tensor, state: Tensor
+    ) -> Tuple[Tensor, List[Observation]]: ...
+
     def get_action_sequence_and_returns(self, state: Tensor) -> None: ...
+
     @abstractmethod
     def get_candidate_action_sequence(self) -> Tensor: ...
+
     @abstractmethod
     def get_best_action(self, action_sequence: Tensor, returns: Tensor) -> Tensor: ...
+
     @abstractmethod
     def update_sequence_generation(self, elite_actions: Tensor) -> None: ...
+
     def initialize_actions(self, batch_shape: torch.Size) -> None: ...
-    def forward(self, *args: Tensor, **kwargs: Any) -> Tensor: ...
-    def reset(self, warm_action: Optional[Tensor] = ...) -> None: ...
+
+    def forward(
+            self, *args: Tensor, **kwargs: Any
+    ) -> Tuple[Tensor, Tensor, List[Observation]]: ...
+
+    def reset(
+            self, state: Optional[State] = ..., warm_action: Optional[Tensor] = ...
+    ) -> None: ...

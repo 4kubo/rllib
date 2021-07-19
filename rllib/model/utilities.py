@@ -14,9 +14,12 @@ class PredictionStrategy(object):
         Prediction strategy to set.
     """
 
-    def __init__(self, *models, prediction_strategy="moment_matching"):
+    def __init__(
+        self, *models, prediction_strategy="moment_matching", sample_shape=None
+    ):
         self.models = models
         self.prediction_strategy = prediction_strategy
+        self._sample_shape = sample_shape
 
         self._prediction_strategies = []
         self._heads = []
@@ -27,7 +30,10 @@ class PredictionStrategy(object):
     def __enter__(self):
         """Freeze the parameters."""
         for model in self.models:
-            model.set_prediction_strategy(self.prediction_strategy)
+            model.set_prediction_strategy(
+                self.prediction_strategy,
+                shape=self._sample_shape,
+            )
 
     def __exit__(self, *args):
         """Unfreeze the parameters."""

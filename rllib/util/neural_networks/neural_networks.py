@@ -231,17 +231,20 @@ class Ensemble(HeteroGaussianNN):
         - 'moment_matching': mean and covariance are computed as sample averages.
         - 'sample_head': sample a head U.A.R. and return its output.
         The same head is used along a batch.
-        - 'sample_multiple_head': sample a head U.A.R. and return its output.
+        - 'ts_one': sample a head U.A.R. and return its output.
         A different random head is used for each element of a batch.
         - 'set_head': set a single head with .set_head() and return its output.
         This is useful for Thompson's Sampling (for example).
-        - 'set_head_idx': set a head with .set_head_idx() and return its output.
+        - 'ts_inf': set a head with .set_head_idx() and return its output.
         Crucially, it has to have the same batch_size as the predicted state-actions.
     """
 
     num_heads: int
     head_ptr: int
     prediction_strategy: str
+    _batch_shape: list
+    _batch_rank: int
+    _dim_out: int
 
     def __init__(
         self,
@@ -258,7 +261,15 @@ class Ensemble(HeteroGaussianNN):
         *args,
         **kwargs,
     ):
-        super().__init__(in_dim, (out_dim[0] * num_heads,), *args, **kwargs)
+        super().__init__(
+            in_dim,
+            (out_dim[0] * num_heads,),
+            layers=layers,
+            non_linearity=non_linearity,
+            biased_head=biased_head,
+            squashed_output=squashed_output,
+            initial_scale=initial_scale,
+        )
 
         self.kwargs.update(
             out_dim=out_dim,
@@ -267,7 +278,7 @@ class Ensemble(HeteroGaussianNN):
         )
         self.num_heads = num_heads
         self.head_ptr = 0
-        self.head_indexes = torch.zeros(1).long()
+        self.head_idx = None
         self.deterministic = deterministic
         self.prediction_strategy = prediction_strategy
 
@@ -314,20 +325,20 @@ class Ensemble(HeteroGaussianNN):
             mean = out.mean(-1)
             variance = (scale.square() + out.square()).mean(-1) - mean.square()
             scale = safe_cholesky(torch.diag_embed(variance))
-        elif self.prediction_strategy == "sample_head":  # TS-1
+        elif self.prediction_strategy == "sample_head":  # Variant of TS-1
             head_ptr = torch.randint(self.num_heads, (1,))
             mean = out[..., head_ptr]
             scale = torch.diag_embed(scale[..., head_ptr])
         elif self.prediction_strategy in ["set_head", "posterior"]:  # Thompson sampling
             mean = out[..., self.head_ptr]
             scale = torch.diag_embed(scale[..., self.head_ptr])
-        elif self.prediction_strategy == "sample_multiple_head":  # TS-1
-            head_idx = torch.randint(self.num_heads, out.shape[:-1]).unsqueeze(-1)
+        elif self.prediction_strategy == "ts_one":  # TS-1
+            head_idx = self._sample_idx()
             mean = out.gather(-1, head_idx).squeeze(-1)
             scale = torch.diag_embed(scale.gather(-1, head_idx).squeeze(-1))
-        elif self.prediction_strategy == "set_head_idx":  # TS-INF
-            mean = out.gather(-1, self.head_idx)
-            scale = torch.diag_embed(scale.gather(-1, self.head_idx))
+        elif self.prediction_strategy == "ts_inf":  # TS-INF
+            mean = out.gather(-1, self.head_idx).squeeze(-1)
+            scale = torch.diag_embed(scale.gather(-1, self.head_idx).squeeze(-1))
         else:
             raise NotImplementedError
 
@@ -357,24 +368,52 @@ class Ensemble(HeteroGaussianNN):
         return self.head_ptr
 
     @torch.jit.export
-    def set_head_idx(self, head_indexes):
+    def set_head_idx(self, head_idx):
         """Set ensemble head for particles.."""
-        self.head_indexes = head_indexes
+        self.head_idx = head_idx
 
     @torch.jit.export
     def get_head_idx(self):
         """Get ensemble head index."""
-        return self.head_indexes
+        return self.head_idx
 
     @torch.jit.export
-    def set_prediction_strategy(self, prediction: str):
+    def set_prediction_strategy(self, prediction: str, shape=None):
         """Set ensemble prediction strategy."""
         self.prediction_strategy = prediction
+        if shape is not None:
+            self._batch_shape = shape[:-1]
+            self._batch_rank = len(shape[:-1])
+            self._dim_out = shape[-1]
+
+            if prediction == "ts_inf":
+                self.head_idx = self._sample_idx()
 
     @torch.jit.export
     def get_prediction_strategy(self) -> str:
         """Get ensemble head."""
         return self.prediction_strategy
+
+    def _sample_idx(self, shape=None):
+        if shape is None:
+            batch_shape = self._batch_shape
+            batch_rank = self._batch_rank
+            dim_out = self._dim_out
+        else:
+            batch_shape = shape[:-1]
+            batch_rank = len(shape[:-1])
+            dim_out = shape[-1]
+
+        indexes = torch.randint(self.num_heads, batch_shape, device=self.device)[
+            ..., None, None
+        ].repeat([1] * batch_rank + [dim_out, 1])
+        return indexes
+
+    @property
+    def device(self):
+        if not hasattr(self, "_device"):
+            self._device = next(self.parameters()).device
+        return self._device
 
 
 class FelixNet(FeedForwardNN):
