@@ -6,26 +6,26 @@ from .cartpole import DiscreteVectorizedCartPoleEnv, VectorizedCartPoleEnv
 from .pendulum import VectorizedPendulumEnv
 
 register(
-    id="VContinuous-CartPole-v0",
+    id="VecContinuous-CartPole-v0",
     entry_point="rllib.environment.vectorized.cartpole:VectorizedCartPoleEnv",
 )
 
 register(
-    id="VDiscrete-CartPole-v0",
+    id="VecDiscrete-CartPole-v0",
     entry_point="rllib.environment.vectorized.cartpole:DiscreteVectorizedCartPoleEnv",
 )
 
 register(
-    id="VContinuous-Acrobot-v0",
+    id="VecContinuous-Acrobot-v0",
     entry_point="rllib.environment.vectorized.acrobot:VectorizedAcrobotEnv",
 )
 
 register(
-    id="VDiscrete-Acrobot-v0",
+    id="VecDiscrete-Acrobot-v0",
     entry_point="rllib.environment.vectorized.acrobot:DiscreteVectorizedAcrobotEnv",
 )
 
 register(
-    id="VPendulum-v0",
+    id="VecPendulum-v0",
     entry_point="rllib.environment.vectorized.pendulum:VectorizedPendulumEnv",
 )

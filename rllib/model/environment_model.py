@@ -1,7 +1,29 @@
 """Model implemented by querying an environment."""
 import torch
 
+from rllib.environment.gym_environment import GymEnvironment
+from rllib.environment.vectorized.subproc_vec_env import MujocoVecEnv
 from .abstract_model import AbstractModel
+
+VEC2ENV_NAME = {
+    "PendulumSwingUp-v0": "VecPendulum-v0",
+    "VecContinuous-CartPole-v0": "VecContinuous-CartPole-v0",
+    "VecDiscrete-CartPole-v0": "VecDiscrete-CartPole-v0",
+    "VecContinuous-Acrobot-v0": "VecContinuous-Acrobot-v0",
+    "VecDiscrete-Acrobot-v0": "VecDiscrete-Acrobot-v0",
+    # MuJoCo envs.
+    "MBHalfCheetah-v0": "MBHalfCheetah-v0",
+    "MBHumanoid-v0": "MBHumanoid-v0",
+    "MBAnt-v0": "MBAnt-v0",
+    "MBSwimmer-v0": "MBSwimmer-v0",
+    "MBCartPole-v0": "MBCartPole-v0",
+    "MBHopper-v0": "MBHopper-v0",
+    "MBInvertedPendulum-v0": "MBInvertedPendulum-v0",
+    "MBPusher-v0": "MBPusher-v0",
+    "MBReacher2d-v0": "MBReacher2d-v0",
+    "MBReacher3d-v0": "MBReacher3d-v0",
+    "MBWalker2d-v0": "MBWalker2d-v0",
+}
 
 
 class EnvironmentModel(AbstractModel):
@@ -13,22 +35,40 @@ class EnvironmentModel(AbstractModel):
 
     """
 
-    def __init__(self, environment, *args, **kwargs):
+    def __init__(self, environment, model_kind="dynamics", **env_config):
         super().__init__(
             dim_state=environment.dim_state,
             dim_action=environment.dim_action,
             num_states=environment.num_states,
             num_actions=environment.num_actions,
             deterministic=True,
-            *args,
-            **kwargs,
+            model_kind=model_kind,
         )
-        self.environment = environment
+
+        try:
+            vector_env_name = VEC2ENV_NAME[environment.name]
+        except KeyError:
+            raise NotImplementedError(
+                "{0} is not implemented yet as a vector environment"
+                " for use inside TrueModel".format(environment.name)
+            )
+
+        env_config = env_config or {}
+
+        if not vector_env_name.startswith("Vec"):
+            n_remotes = 5
+            self.environment = MujocoVecEnv(
+                env_name=vector_env_name, n_remotes=n_remotes, **env_config
+            )
+        else:
+            self.environment = GymEnvironment(vector_env_name, **env_config)
+
+        self.environment.reset()
 
     @classmethod
-    def default(cls, environment, *args, **kwargs):
+    def default(cls, environment, **kwargs):
         """See AbstractModel.default()."""
-        return cls(environment)
+        return cls(environment, **kwargs)
 
     def forward(self, state, action, _=None):
         """Get Next-State distribution."""
@@ -48,6 +88,11 @@ class EnvironmentModel(AbstractModel):
             )
         else:
             raise NotImplementedError(f"{self.model_kind} not implemented")
+
+    @classmethod
+    def is_available(self, env_name) -> bool:
+        """Return whether env_name is available for EnvironmentModel."""
+        return env_name in VEC2ENV_NAME
 
     @property
     def name(self):

@@ -10,7 +10,7 @@ from rllib.util.training.agent_training import evaluate_agent
 
 SEED = 0
 MAX_STEPS = 200
-ENVIRONMENT = ["VPendulum-v0", "VContinuous-CartPole-v0"][1]
+ENVIRONMENT = ["VecPendulum-v0", "VecContinuous-CartPole-v0"][1]
 
 env = GymEnvironment(ENVIRONMENT, SEED)
 env_model = copy.deepcopy(env)

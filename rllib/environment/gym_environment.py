@@ -29,6 +29,7 @@ class GymEnvironment(AbstractEnvironment):
         self.env = env
         self.env.seed(seed)
         self.env_name = env_name
+        self.kwargs = kwargs
 
         dim_action, num_actions = parse_space(self.env.action_space)
         dim_state, num_states = parse_space(self.env.observation_space)

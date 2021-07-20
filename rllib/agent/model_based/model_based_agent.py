@@ -16,6 +16,7 @@ from rllib.algorithms.model_learning_algorithm import ModelLearningAlgorithm
 from rllib.algorithms.mpc.policy_shooting import PolicyShooting
 from rllib.dataset.experience_replay import ExperienceReplay, StateExperienceReplay
 from rllib.model import TransformedModel
+from rllib.model.environment_model import EnvironmentModel
 from rllib.policy.mpc_policy import MPCPolicy
 from rllib.policy.random_policy import RandomPolicy
 from rllib.util.neural_networks.utilities import DisableGradient
@@ -242,21 +243,32 @@ class ModelBasedAgent(AbstractAgent):
         l2_reg=1e-4,
         calibrate=True,
         with_model_learning=True,
+        use_true_env=False,
         *args,
         **kwargs,
     ):
         """Get a default model-based agent."""
         if dynamical_model is None:
-            dynamical_model = TransformedModel.default(environment, *args, **kwargs)
+            if use_true_env:
+                dynamical_model = EnvironmentModel.default(
+                    environment, **environment.kwargs
+                )
+            else:
+                dynamical_model = TransformedModel.default(environment, *args, **kwargs)
         if reward_model is None:
             try:
                 reward_model = environment.env.reward_model()
             except AttributeError:
-                reward_model = TransformedModel.default(
-                    environment,
-                    model_kind="rewards",
-                    transformations=dynamical_model.forward_transformations,
-                )
+                if EnvironmentModel.is_available(environment.name):
+                    reward_model = EnvironmentModel.default(
+                        environment, model_kind="rewards", **environment.kwargs
+                    )
+                else:
+                    reward_model = TransformedModel.default(
+                        environment,
+                        model_kind="rewards",
+                        transformations=dynamical_model.forward_transformations,
+                    )
         if termination_model is None:
             try:
                 termination_model = environment.env.termination_model()
