@@ -15,7 +15,11 @@ class RemoteMujocoEnv:
     Remote environment class as a ray's actor
     """
 
+    # noinspection PyUnresolvedReferences
     def __init__(self, env_creator):
+        # Need import custom environments for each ray's remote class
+        from rllib import environment
+
         self._env = env_creator()
 
     def step(self, action, qpos, qvel):
