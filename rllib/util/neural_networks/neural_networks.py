@@ -327,8 +327,8 @@ class Ensemble(HeteroGaussianNN):
             scale = safe_cholesky(torch.diag_embed(variance))
         elif self.prediction_strategy == "sample_head":  # Variant of TS-1
             head_ptr = torch.randint(self.num_heads, (1,))
-            mean = out[..., head_ptr]
-            scale = torch.diag_embed(scale[..., head_ptr])
+            mean = out[..., head_ptr].squeeze(-1)
+            scale = torch.diag_embed(scale[..., head_ptr].squeeze(-1))
         elif self.prediction_strategy in ["set_head", "posterior"]:  # Thompson sampling
             mean = out[..., self.head_ptr]
             scale = torch.diag_embed(scale[..., self.head_ptr])
