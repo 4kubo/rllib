@@ -316,10 +316,10 @@ class Ensemble(HeteroGaussianNN):
         if self.deterministic:
             scale = torch.zeros_like(out)
         else:
-            scale = nn.functional.softplus(
-                self._scale(x) + self._init_scale_transformed
-            ).clamp(self._min_scale, self._max_scale)
-            scale = torch.reshape(scale, scale.shape[:-1] + (-1, self.num_heads))
+            scale_ = self._scale(x) + self._init_scale_transformed
+            scale_ = self._max_scale - nn.functional.softplus(self._max_scale - scale_)
+            scale_ = self._min_scale + nn.functional.softplus(scale_ - self._min_scale)
+            scale = torch.reshape(scale_, scale_.shape[:-1] + (-1, self.num_heads))
 
         if self.prediction_strategy == "moment_matching":
             mean = out.mean(-1)
