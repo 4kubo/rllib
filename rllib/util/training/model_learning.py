@@ -74,19 +74,19 @@ def _validate_model_step(model, observation, logger):
         observation = Observation(**observation)
     observation.action = observation.action[..., : model.dim_action[0]]
 
-    with PredictionStrategy(model, prediction_strategy="moment_matching"):
-        mse = model_mse(model, observation).item()
+    with PredictionStrategy(model, prediction_strategy="sample_head"):
+        loss = model_loss(model, observation).mean().item()
         sharpness_ = sharpness(model, observation).item()
         calibration_score_ = calibration_score(model, observation).item()
 
     logger.update(
         **{
-            f"{model.model_kind[:3]}-val-mse": mse,
-            f"{model.model_kind[:3]}-sharp": sharpness_,
-            f"{model.model_kind[:3]}-calib": calibration_score_,
+            f"{model.model_kind[:3]}-val-loss": loss,
+            f"{model.model_kind[:3]}-val-sharp": sharpness_,
+            f"{model.model_kind[:3]}-val-calib": calibration_score_,
         }
     )
-    return mse
+    return loss
 
 
 def train_model(

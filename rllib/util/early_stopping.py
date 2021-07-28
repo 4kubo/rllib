@@ -1,4 +1,6 @@
 """Early Stopping algorithm."""
+import numpy as np
+
 from rllib.util.utilities import MovingAverage
 
 
@@ -48,7 +50,7 @@ class EarlyStopping(object):
             moving_average = self.moving_average[i].value
 
             if self.relative:
-                if moving_average > (1 + self.epsilon) * min_value:
+                if moving_average > (1 + np.sign(min_value) * self.epsilon) * min_value:
                     return True
             else:
                 if moving_average > self.epsilon:
