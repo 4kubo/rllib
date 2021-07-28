@@ -34,7 +34,7 @@ def train_model(
         num_epochs: Optional[int] = ...,
         max_iter: int = ...,
         epsilon: float = ...,
-        non_decrease_iter: int = ...,
+        non_decrease_iter: float = ...,
         logger: Optional[Logger] = ...,
         validation_set: Optional[ExperienceReplay] = ...,
         device: device = ...,

@@ -120,9 +120,9 @@ def train_model(
     epsilon: float.
         Early stopping parameter. If epoch loss is > (1 + epsilon) of minimum loss the
         optimization process stops.
-    non_decrease_iter: int, optional.
+    non_decrease_iter: float, optional.
         Early stopping parameter. If epoch loss does not decrease for consecutive
-        non_decrease_iter, the optimization process stops.
+        max_iter * non_decrease_iter, the optimization process stops.
     logger: Logger, optional.
         Progress logger.
     validation_set: ExperienceReplay, optional.
@@ -137,7 +137,7 @@ def train_model(
     data_size = len(train_set)
     if num_epochs is not None:
         max_iter = data_size * num_epochs // batch_size
-        non_decrease_iter = data_size * non_decrease_iter
+    non_decrease_iter = max(int(max_iter * non_decrease_iter), 1)
     model.train()
     early_stopping = EarlyStopping(epsilon, non_decrease_iter=non_decrease_iter)
 
