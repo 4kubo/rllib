@@ -37,7 +37,6 @@ class EnsembleModel(NNModel):
         super().__init__(deterministic=False, *args, **kwargs)
         self.num_heads = num_heads
         self.prediction_strategy = prediction_strategy
-        self.deterministic = deterministic
 
         self.nn = torch.nn.ModuleList(
             [
