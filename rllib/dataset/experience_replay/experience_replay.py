@@ -197,6 +197,8 @@ class ExperienceReplay(data.Dataset):
         observation = self._get_consecutive_observations(idx, self.num_steps)
         if self.raw:
             return observation
+
+        observation = observation.clone()
         for transform in self.transformations:
             observation = transform(observation)
         return observation
