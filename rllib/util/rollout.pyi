@@ -71,9 +71,10 @@ def rollout_model(
     max_steps: int = ...,
 ) -> Trajectory: ...
 def rollout_actions(
-    dynamical_model: AbstractModel,
-    reward_model: AbstractModel,
-    action_sequence: Action,
-    initial_state: State,
-    termination_model: Optional[AbstractModel] = ...,
+        dynamical_model: AbstractModel,
+        reward_model: AbstractModel,
+        action_sequence: Action,
+        initial_state: State,
+        termination_model: Optional[AbstractModel] = ...,
+        device: device = ...,
 ) -> Trajectory: ...
