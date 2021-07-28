@@ -1,11 +1,13 @@
-from typing import Any, Optional
+from typing import Any, Optional, Tuple, Union
 
 from rllib.agent.abstract_agent import AbstractAgent
 from rllib.algorithms.abstract_algorithm import AbstractAlgorithm
 from rllib.algorithms.model_learning_algorithm import ModelLearningAlgorithm
 from rllib.algorithms.mpc.abstract_solver import MPCSolver
 from rllib.dataset.experience_replay import ExperienceReplay, StateExperienceReplay
+from rllib.environment import AbstractEnvironment
 from rllib.model import AbstractModel
+
 
 class ModelBasedAgent(AbstractAgent):
     model_learning_algorithm: ModelLearningAlgorithm
@@ -35,12 +37,25 @@ class ModelBasedAgent(AbstractAgent):
         model_learning_algorithm: Optional[ModelLearningAlgorithm] = ...,
         planning_algorithm: Optional[MPCSolver] = ...,
         memory: Optional[ExperienceReplay] = ...,
-        thompson_sampling: bool = ...,
-        training_verbose: bool = ...,
-        *args: Any,
-        **kwargs: Any,
+            thompson_sampling: bool = ...,
+            training_verbose: bool = ...,
+            *args: Any,
+            **kwargs: Any,
     ) -> None: ...
+
     @property
     def learn_model_at_observe(self) -> bool: ...
+
     @property
     def learn_model_at_end_episode(self) -> bool: ...
+
+
+def build_default_models(
+        environment: AbstractEnvironment,
+        dynamical_model: Optional[AbstractModel] = ...,
+        reward_model: Optional[AbstractModel] = ...,
+        termination_model: Optional[AbstractModel] = ...,
+        use_true_env: bool = ...,
+        *args: Any,
+        **kwargs: Any,
+) -> Tuple[AbstractModel, AbstractModel, Union[AbstractModel, None]]: ...

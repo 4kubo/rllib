@@ -243,37 +243,31 @@ class ModelBasedAgent(AbstractAgent):
         l2_reg=1e-4,
         calibrate=True,
         with_model_learning=True,
+        build_model_fn=None,
         use_true_env=False,
         *args,
         **kwargs,
     ):
         """Get a default model-based agent."""
-        if dynamical_model is None:
-            if use_true_env:
-                dynamical_model = EnvironmentModel.default(
-                    environment, **environment.kwargs
-                )
-            else:
-                dynamical_model = TransformedModel.default(environment, *args, **kwargs)
-        if reward_model is None:
-            try:
-                reward_model = environment.env.reward_model()
-            except AttributeError:
-                if EnvironmentModel.is_available(environment.name):
-                    reward_model = EnvironmentModel.default(
-                        environment, model_kind="rewards", **environment.kwargs
-                    )
-                else:
-                    reward_model = TransformedModel.default(
-                        environment,
-                        model_kind="rewards",
-                        transformations=dynamical_model.forward_transformations,
-                    )
-        if termination_model is None:
-            try:
-                termination_model = environment.env.termination_model()
-            except AttributeError:
-                pass
+        if build_model_fn is None:
+            dynamical_model, reward_model, termination_model = build_default_models(
+                environment,
+                dynamical_model=dynamical_model,
+                reward_model=reward_model,
+                termination_model=termination_model,
+                use_true_env=use_true_env,
+                **kwargs,
+            )
+        else:
+            dynamical_model, reward_model, termination_model = build_model_fn(
+                environment,
+                dynamical_model=dynamical_model,
+                reward_model=reward_model,
+                termination_model=termination_model,
+                use_true_env=use_true_env,
+                **kwargs,
+            )
+
         params = list(chain(dynamical_model.parameters(), reward_model.parameters()))
         if with_model_learning and len(params) != 0:
             model_optimizer = Adam(params, lr=model_lr, weight_decay=l2_reg)
@@ -320,3 +314,42 @@ class ModelBasedAgent(AbstractAgent):
                     if key.startswith(f"{state_key}.")
                 }
                 model.load_state_dict(model_state_dict)
+
+
+def build_default_models(
+    environment,
+    dynamical_model=None,
+    reward_model=None,
+    termination_model=None,
+    use_true_env=False,
+    *args,
+    **kwargs,
+):
+    if dynamical_model is None:
+        if use_true_env:
+            dynamical_model = EnvironmentModel.default(
+                environment, **environment.kwargs
+            )
+        else:
+            dynamical_model = TransformedModel.default(environment, *args, **kwargs)
+    if reward_model is None:
+        try:
+            reward_model = environment.env.reward_model()
+        except AttributeError:
+            if EnvironmentModel.is_available(environment.name):
+                reward_model = EnvironmentModel.default(
+                    environment, model_kind="rewards", **environment.kwargs
+                )
+            else:
+                reward_model = TransformedModel.default(
+                    environment,
+                    model_kind="rewards",
+                    transformations=dynamical_model.forward_transformations,
+                )
+    if termination_model is None:
+        try:
+            termination_model = environment.env.termination_model()
+        except AttributeError:
+            pass
+
+    return dynamical_model, reward_model, termination_model
