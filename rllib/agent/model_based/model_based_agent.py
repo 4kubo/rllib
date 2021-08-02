@@ -327,8 +327,9 @@ def build_default_models(
 ):
     if dynamical_model is None:
         if use_true_env:
+            n_remotes = kwargs.get("n_remotes", 20)
             dynamical_model = EnvironmentModel.default(
-                environment, **environment.kwargs
+                environment, n_remotes=n_remotes, **environment.kwargs
             )
         else:
             dynamical_model = TransformedModel.default(environment, *args, **kwargs)

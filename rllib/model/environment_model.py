@@ -35,7 +35,9 @@ class EnvironmentModel(AbstractModel):
 
     """
 
-    def __init__(self, environment, model_kind="dynamics", **env_config):
+    def __init__(
+        self, environment, n_remotes=None, model_kind="dynamics", **env_config
+    ):
         super().__init__(
             dim_state=environment.dim_state,
             dim_action=environment.dim_action,
@@ -56,7 +58,10 @@ class EnvironmentModel(AbstractModel):
         env_config = env_config or {}
 
         if not vector_env_name.startswith("Vec"):
-            n_remotes = 5
+            assert isinstance(n_remotes, int), ValueError(
+                "n_remotes = {0}. If you use MujocoVecEnv for {1}, "
+                "set integer for n_remotes > 0.".format(n_remotes, vector_env_name)
+            )
             self.environment = MujocoVecEnv(
                 env_name=vector_env_name, n_remotes=n_remotes, **env_config
             )
@@ -66,9 +71,9 @@ class EnvironmentModel(AbstractModel):
         self.environment.reset()
 
     @classmethod
-    def default(cls, environment, **kwargs):
+    def default(cls, environment, n_remotes=None, **kwargs):
         """See AbstractModel.default()."""
-        return cls(environment, **kwargs)
+        return cls(environment, n_remotes=n_remotes, **kwargs)
 
     def forward(self, state, action, _=None):
         """Get Next-State distribution."""
