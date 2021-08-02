@@ -170,7 +170,7 @@ def copy_obs_dict(obs: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
 
 
 def dict_to_obs(
-        obs_space: gym.spaces.Space, obs_dict: Dict[Any, np.ndarray]
+    obs_space: gym.spaces.Space, obs_dict: Dict[Any, np.ndarray]
 ) -> VecEnvObs:
     """
     Convert an internal representation raw_obs into the appropriate type
@@ -196,7 +196,7 @@ def dict_to_obs(
 
 
 def obs_space_info(
-        obs_space: gym.spaces.Space,
+    obs_space: gym.spaces.Space,
 ) -> Tuple[List[str], Dict[Any, Tuple[int, ...]], Dict[Any, np.dtype]]:
     """
     Get dict-structured information about a gym.Space.
