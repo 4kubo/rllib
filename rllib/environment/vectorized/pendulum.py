@@ -1,13 +1,14 @@
 """Vectorized Gym Pendulum Environment."""
 
 import numpy as np
-from gym.envs.classic_control.pendulum import PendulumEnv, angle_normalize
+from gym.envs.classic_control.pendulum import angle_normalize
 
+from rllib.environment.mujoco.pendulum_swing_up import PendulumSwingUpEnv
 from rllib.environment.vectorized.util import VectorizedEnv
 from rllib.util.utilities import get_backend
 
 
-class VectorizedPendulumEnv(PendulumEnv, VectorizedEnv):
+class VectorizedPendulumEnv(PendulumSwingUpEnv, VectorizedEnv):
     """Vectorized implementation of Pendulum."""
 
     def step(self, action):
