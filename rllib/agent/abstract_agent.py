@@ -217,14 +217,6 @@ class AbstractAgent(nn.Module, metaclass=ABCMeta):
         )
         return False
 
-    def train(self, val=True):
-        """Set the agent in training mode."""
-        self.training = val
-
-    def eval(self, val=True):
-        """Set the agent in evaluation mode."""
-        self.train(not val)
-
     def _learn_steps(self, closure):
         """Apply `num_iter' learn steps to closure function."""
         for _ in tqdm(range(self.num_iter), disable=not self._training_verbose):

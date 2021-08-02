@@ -173,7 +173,6 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
 
     def forward(self, state):
         """Return action that solves the MPC problem."""
-        self.dynamical_model.eval()
         batch_shape = state.shape[:-1]
         self.initialize_actions(batch_shape)
 
