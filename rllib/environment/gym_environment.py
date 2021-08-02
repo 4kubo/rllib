@@ -1,10 +1,11 @@
 """Wrapper for OpenAI-Gym Environments."""
 
 import gym
-import gym.wrappers
+from gym.wrappers import TimeLimit, Monitor
 
 from .abstract_environment import AbstractEnvironment
 from .utilities import parse_space
+from .vectorized.dummy_vec_env import DummyVecEnv
 from .vectorized.util import VectorizedEnv
 
 
@@ -20,19 +21,36 @@ class GymEnvironment(AbstractEnvironment):
 
     """
 
-    def __init__(self, env_name, seed=None, **kwargs):
-        env = gym.make(env_name, **kwargs)
-        if isinstance(env, gym.wrappers.TimeLimit) and not kwargs.get(
-            "episodic", False
-        ):
-            env = env.unwrapped
+    def __init__(
+        self,
+        env_name,
+        seed=None,
+        num_envs=1,
+        max_episode_steps=0,
+        log_dir=None,
+        **kwargs
+    ):
+        episodic = kwargs.pop("episodic", False)
+
+        def make_env(idx):
+            env = gym.make(env_name, **kwargs)
+            env = _wrap_env(env, episodic, max_episode_steps, log_dir, idx)
+            return env
+
+        if 1 < num_envs:
+            env = DummyVecEnv([make_env for _ in range(num_envs)])
+            dim_action, num_actions = parse_space(env.single_action_space)
+            dim_state, num_states = parse_space(env.single_observation_space)
+        else:
+            env = make_env(0)
+            dim_action, num_actions = parse_space(env.action_space)
+            dim_state, num_states = parse_space(env.observation_space)
+
         self.env = env
         self.env.seed(seed)
         self.env_name = env_name
         self.kwargs = kwargs
 
-        dim_action, num_actions = parse_space(self.env.action_space)
-        dim_state, num_states = parse_space(self.env.observation_space)
         if num_states > -1:
             num_states += 1  # Add a terminal state.
 
@@ -154,3 +172,16 @@ class GymEnvironment(AbstractEnvironment):
     def name(self):
         """Return class name."""
         return self.env_name
+
+
+def _wrap_env(env, episodic: int, max_episode_steps: int, log_dir=None, idx=0):
+    # Time limit is controlled not when gym registration but by argument
+    if isinstance(env, TimeLimit) and (not episodic):
+        env = env.unwrapped
+    if not isinstance(env, TimeLimit) and 0 < max_episode_steps:
+        env = TimeLimit(env, max_episode_steps=max_episode_steps)
+    # Wrap with montior wrapper
+    if log_dir is not None and isinstance(log_dir, str):
+        # TODO: Deal with issues when env is mujoco
+        env = Monitor(env, directory=log_dir, uid=idx)
+    return env
