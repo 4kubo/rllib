@@ -126,9 +126,7 @@ class AbstractAgent(nn.Module, metaclass=ABCMeta):
 
     def act(self, state):
         """Ask the agent for an action to interact with the environment."""
-        if self.total_steps < self.exploration_steps or (
-            self.total_episodes < self.exploration_episodes
-        ):
+        if self.is_random_policy:
             policy = self.policy.random()
         else:
             if not isinstance(state, torch.Tensor):
@@ -241,6 +239,14 @@ class AbstractAgent(nn.Module, metaclass=ABCMeta):
                 break
         self.algorithm.reset()
         self.early_stopping_algorithm.reset()
+
+    @property
+    def is_random_policy(self):
+        """Return bool whether agent takes random action"""
+        return self.training and (
+            (self.total_steps < self.exploration_steps)
+            or (self.total_episodes < self.exploration_episodes)
+        )
 
     @property
     def total_episodes(self):

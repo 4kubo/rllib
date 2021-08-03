@@ -266,17 +266,18 @@ def sample_mean_and_cov(sample, diag=False, device=None):
         Tensor of dimension [batch x N x N].
 
     """
-    num_samples = sample.shape[-1]
+    N, num_samples = sample.shape[-2:]
     mean = torch.mean(sample, dim=-1, keepdim=True)
 
     if diag:
         covariance = torch.diag_embed(sample.var(-1))
     else:
         sigma = (mean - sample) @ (mean - sample).transpose(-2, -1)
-        jitter = 1e-6 * torch.eye(sigma.shape[-1])
-        if device is not None:
-            jitter = jitter.to(device)
-        sigma += jitter  # Add some jitter.
+        if num_samples < N:
+            jitter = 1e-4 * torch.eye(sigma.shape[-1]) * (N - num_samples)
+            if device is not None:
+                jitter = jitter.to(device)
+            sigma += jitter  # Add some jitter.
         covariance = sigma / num_samples
     mean = mean.squeeze(-1)
 
