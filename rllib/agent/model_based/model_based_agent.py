@@ -293,18 +293,20 @@ class ModelBasedAgent(AbstractAgent):
             **kwargs,
         )
 
-    def state_dict(self):
-        tmp_state_dict = super(ModelBasedAgent, self).state_dict()
+    def state_dict(self, destination=None, prefix="", keep_vars=False):
+        tmp_state_dict = super(ModelBasedAgent, self).state_dict(
+            destination, prefix, keep_vars
+        )
 
         def condition(key):
             return any(key.startswith(model_kind) for model_kind in self.state_keys)
 
         state_dict = {
-            key: value for key, value in tmp_state_dict.items() if condition(key)
+            key: value.cpu() for key, value in tmp_state_dict.items() if condition(key)
         }
         return state_dict
 
-    def load_state_dict(self, state_dict):
+    def load_state_dict(self, state_dict, strict=True):
         for state_key in self.state_keys:
             model = getattr(self, state_key)
             if model is not None:
@@ -313,7 +315,7 @@ class ModelBasedAgent(AbstractAgent):
                     for key, value in state_dict.items()
                     if key.startswith(f"{state_key}.")
                 }
-                model.load_state_dict(model_state_dict)
+                model.load_state_dict(model_state_dict, strict)
 
 
 def build_default_models(

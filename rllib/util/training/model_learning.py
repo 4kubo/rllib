@@ -2,7 +2,7 @@
 import gpytorch.settings
 import numpy as np
 import torch
-from tqdm import tqdm
+from tqdm import trange
 
 from rllib.dataset.datatypes import Observation
 from rllib.model import EnsembleModel, ExactGPModel, NNModel
@@ -101,6 +101,7 @@ def train_model(
     logger=None,
     validation_set=None,
     device=None,
+    show_progress=False,
 ):
     """Train a Predictive Model.
 
@@ -150,8 +151,17 @@ def train_model(
             mse = _validate_model_step(model, observation, logger)
         early_stopping.update(mse)
 
+        num_samples_for_model_learning += batch_size
+
         if early_stopping.stop:
-            return
+            break
+
+    logger.update(
+        **{
+            "num_samples_for_model_learning": num_samples_for_model_learning,
+            "model_learning_ratio": i / max_iter,
+        }
+    )
 
 
 def calibrate_model(

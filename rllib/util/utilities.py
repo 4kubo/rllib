@@ -301,13 +301,15 @@ def safe_cholesky(covariance_matrix, jitter=1e-6):
         return torch.cholesky(covariance_matrix)
     except RuntimeError:
         dim = covariance_matrix.shape[-1]
+        device = covariance_matrix.device
         if jitter > 1:
             # When jitter is too big, then there is some numerical issue and this avoids
             # stack overflow.
             warnings.warn("Jitter too big. Maybe some numerical issue somewhere.")
-            return torch.eye(dim)
+            return torch.eye(dim, device=device)
         return safe_cholesky(
-            covariance_matrix + jitter * torch.eye(dim), jitter=10 * jitter
+            covariance_matrix + jitter * torch.eye(dim, device=device),
+            jitter=10 * jitter,
         )
 
 
