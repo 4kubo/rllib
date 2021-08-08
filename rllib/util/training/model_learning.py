@@ -142,7 +142,14 @@ def train_model(
     model.train()
     early_stopping = EarlyStopping(epsilon, non_decrease_iter=non_decrease_iter)
 
-    for _ in tqdm(range(max_iter)):
+    num_samples_for_model_learning = 0
+    iter = (
+        trange(max_iter, desc="Model learning on {0} samples".format(data_size))
+        if show_progress
+        else range(max_iter)
+    )
+
+    for i in iter:
         observation, idx, mask = train_set.sample_batch(batch_size, device)
         _train_model_step(model, observation, optimizer, mask, logger)
 
