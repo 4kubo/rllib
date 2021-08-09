@@ -311,7 +311,7 @@ class ModelBasedAgent(AbstractAgent):
             model = getattr(self, state_key)
             if model is not None:
                 model_state_dict = {
-                    key.replace(f"{state_key}.", ""): value
+                    key.replace(f"{state_key}.", "", 1): value
                     for key, value in state_dict.items()
                     if key.startswith(f"{state_key}.")
                 }

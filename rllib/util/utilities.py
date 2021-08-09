@@ -273,8 +273,8 @@ def sample_mean_and_cov(sample, diag=False, device=None):
         covariance = torch.diag_embed(sample.var(-1))
     else:
         sigma = (mean - sample) @ (mean - sample).transpose(-2, -1)
-        if num_samples < N:
-            jitter = 1e-4 * torch.eye(sigma.shape[-1]) * (N - num_samples)
+        if (num_samples < N) or (sigma.min() <= 0):
+            jitter = 1e-4 * torch.eye(sigma.shape[-1]) * max(1, N - num_samples)
             if device is not None:
                 jitter = jitter.to(device)
             sigma += jitter  # Add some jitter.
