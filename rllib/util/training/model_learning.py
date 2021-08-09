@@ -172,12 +172,13 @@ def train_model(
 
 
 def calibrate_model(
-    model,
-    calibration_set,
-    max_iter=100,
-    epsilon=0.0001,
-    temperature_range=(0.1, 100.0),
-    logger=None,
+        model,
+        calibration_set,
+        max_iter=100,
+        epsilon=0.0001,
+        temperature_range=(0.1, 100.0),
+        logger=None,
+        device=None,
 ):
     """Calibrate a model by scaling the temperature.
 
@@ -189,6 +190,8 @@ def calibrate_model(
 
     observation = calibration_set.all_data
     observation.action = observation.action[..., : model.dim_action[0]]
+    if device is not None:
+        observation = observation.to(device)
 
     with torch.no_grad():
         initial_score = calibration_score(model, observation).item()

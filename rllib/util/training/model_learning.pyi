@@ -1,6 +1,7 @@
 """Utility functions for training models."""
 from typing import Optional, Tuple, Union
 
+import torch
 from torch import Tensor
 from torch import device
 from torch.optim.optimizer import Optimizer
@@ -40,12 +41,13 @@ def train_model(
         device: device = ...,
 ) -> None: ...
 def calibrate_model(
-    model: AbstractModel,
-    train_set: ExperienceReplay,
-    max_iter: int = ...,
-    epsilon: float = ...,
-    temperature_range: Tuple[float, float] = ...,
-    logger: Optional[Logger] = ...,
+        model: AbstractModel,
+        train_set: ExperienceReplay,
+        max_iter: int = ...,
+        epsilon: float = ...,
+        temperature_range: Tuple[float, float] = ...,
+        logger: Optional[Logger] = ...,
+        device: Optional[torch.device] = ...,
 ) -> None: ...
 def evaluate_model(
     model: AbstractModel, observation: Observation, logger: Optional[Logger] = ...,
