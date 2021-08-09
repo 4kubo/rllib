@@ -172,13 +172,13 @@ def train_model(
 
 
 def calibrate_model(
-        model,
-        calibration_set,
-        max_iter=100,
-        epsilon=0.0001,
-        temperature_range=(0.1, 100.0),
-        logger=None,
-        device=None,
+    model,
+    calibration_set,
+    max_iter=100,
+    epsilon=0.0001,
+    temperature_range=(0.1, 100.0),
+    logger=None,
+    device=None,
 ):
     """Calibrate a model by scaling the temperature.
 
