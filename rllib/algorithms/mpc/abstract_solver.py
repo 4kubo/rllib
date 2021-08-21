@@ -30,7 +30,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         Scale of covariance matrix to sample.
     num_mpc_iter: int, optional.
         Number of iterations of solver method.
-    num_samples: int, optional.
+    num_action_samples: int, optional.
         Number of samples for shooting method.
     termination_model: Callable, optional.
         Termination condition.
@@ -50,7 +50,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         horizon=25,
         gamma=1.0,
         num_mpc_iter=1,
-        num_samples=400,
+        num_action_samples=400,
         termination_model=None,
         scale=0.3,
         terminal_reward=None,
@@ -76,7 +76,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         self.gamma = gamma
 
         self.num_mpc_iter = num_mpc_iter
-        self.num_samples = num_samples
+        self.num_samples = num_action_samples
         self.terminal_reward = terminal_reward
         self.warm_start = warm_start
         self.default_action = default_action
