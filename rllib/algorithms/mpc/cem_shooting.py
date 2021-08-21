@@ -55,7 +55,13 @@ class CEMShooting(MPCSolver):
         self.alpha = alpha
 
     def get_candidate_action_sequence(self):
-        """Get candidate actions by sampling from a multivariate normal."""
+        """Get candidate actions by sampling from a multivariate normal.
+
+        Returns
+        -------
+        candidate actions: Tensor.
+            Tensor of dimension [horizon, batch_size, num_samples, dim_action]
+        """
         action_distribution = MultivariateNormal(self.mean, self.covariance)
         action_sequence = action_distribution.sample((self.num_samples,))
         action_sequence = action_sequence.permute(
@@ -66,19 +72,31 @@ class CEMShooting(MPCSolver):
         return action_sequence
 
     def get_best_action(self, action_sequence, returns):
-        """Get best action by averaging the num_elites samples."""
-        idx = torch.topk(returns, k=self.num_elites, largest=True, dim=-1)[1]
+        """Get best action by averaging the num_elites samples.
+
+        Parameters
+        ----------
+        action_sequence: Tensor
+            Tensor of dimension [horizon, batch_size, num_samples, dim_act]
+        returns: Tensor
+            Tensor of dimension [batch_size x num_samples]
+        Returns
+        -------
+
+        """
+        idx = torch.topk(
+            returns.view(-1, self.num_samples), k=self.num_elites, largest=True, dim=-1
+        )[1]
         idx = idx.unsqueeze(0).unsqueeze(-1)  # Expand dims to action_sequence.
         idx = idx.repeat_interleave(self.horizon, 0).repeat_interleave(
             self.dim_action, -1
         )
-        return torch.gather(action_sequence, -2, idx)
+        shape = (self.horizon, -1, self.num_samples, self.dim_action)
+        return torch.gather(action_sequence.view(shape), -2, idx).squeeze(1)
 
     def update_sequence_generation(self, elite_actions):
         """Update distribution by the empirical mean and covariance of best actions."""
         device = None if self.device == "cpu" else self.device
-        new_mean, new_cov = sample_mean_and_cov(
-            elite_actions.transpose(-1, -2), device=device
-        )
+        new_mean, new_cov = sample_mean_and_cov(elite_actions, device=device)
         self.mean = self.alpha * self.mean + (1 - self.alpha) * new_mean
         self.covariance = self.alpha * self.covariance + (1 - self.alpha) * new_cov

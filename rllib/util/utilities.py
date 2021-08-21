@@ -252,7 +252,7 @@ def sample_mean_and_cov(sample, diag=False, device=None):
     Parameters
     ----------
     sample: Tensor
-        Tensor of dimensions [batch x N x num_samples].
+        Tensor of dimensions [batch, num_samples, N] where N is dimension of a sample.
     diag: bool, optional.
         Flag to indicate if the computation has to assume independent or correlated
         variables.
@@ -261,18 +261,18 @@ def sample_mean_and_cov(sample, diag=False, device=None):
     Returns
     -------
     mean: Tensor
-        Tensor of dimension [batch x N].
+        Tensor of dimension [batch, N].
     covariance: Tensor
-        Tensor of dimension [batch x N x N].
+        Tensor of dimension [batch, N, N].
 
     """
-    N, num_samples = sample.shape[-2:]
-    mean = torch.mean(sample, dim=-1, keepdim=True)
+    num_samples, N = sample.shape[-2:]
+    mean = torch.mean(sample, dim=-2, keepdim=True)
 
     if diag:
         covariance = torch.diag_embed(sample.var(-1))
     else:
-        sigma = (mean - sample) @ (mean - sample).transpose(-2, -1)
+        sigma = (mean - sample).transpose(-2, -1) @ (mean - sample)
         if (num_samples < N) or (sigma.min() <= 0):
             jitter = 1e-4 * torch.eye(sigma.shape[-1]) * max(1, N - num_samples)
             if device is not None:
