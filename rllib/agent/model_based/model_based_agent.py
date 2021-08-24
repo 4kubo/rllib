@@ -13,14 +13,12 @@ from torch.optim import Adam
 
 from rllib.agent.abstract_agent import AbstractAgent
 from rllib.algorithms.model_learning_algorithm import ModelLearningAlgorithm
-from rllib.algorithms.mpc.policy_shooting import PolicyShooting
 from rllib.dataset.experience_replay import ExperienceReplay, StateExperienceReplay
 from rllib.model import TransformedModel
 from rllib.model.environment_model import EnvironmentModel
 from rllib.policy.mpc_policy import MPCPolicy
 from rllib.policy.random_policy import RandomPolicy
 from rllib.util.neural_networks.utilities import DisableGradient
-from rllib.util.utilities import tensor_to_distribution
 
 
 class ModelBasedAgent(AbstractAgent):
@@ -121,25 +119,6 @@ class ModelBasedAgent(AbstractAgent):
         self.initial_states_dataset = StateExperienceReplay(
             max_len=1000, dim_state=self.dynamical_model.dim_state
         )
-
-    def act(self, state):
-        """Ask the agent for an action to interact with the environment.
-
-        If the plan horizon is zero, then it just samples an action from the policy.
-        If the plan horizon > 0, then is plans with the current model.
-        """
-        if isinstance(self.planning_algorithm, PolicyShooting):
-            if not isinstance(state, torch.Tensor):
-                state = torch.tensor(state, dtype=torch.get_default_dtype())
-            policy = tensor_to_distribution(
-                self.policy(state), **self.policy.dist_params
-            )
-            self.pi = policy
-            action = self.planning_algorithm(state).detach().numpy()
-        else:
-            action = super().act(state)
-
-        return action
 
     def observe(self, observation):
         """Observe a new transition.
