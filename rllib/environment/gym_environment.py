@@ -28,13 +28,14 @@ class GymEnvironment(AbstractEnvironment):
         num_envs=1,
         max_episode_steps=0,
         log_dir=None,
+        wrappers=None,
         **kwargs
     ):
         episodic = kwargs.pop("episodic", False)
 
         def make_env(idx):
             env = gym.make(env_name, **kwargs)
-            env = _wrap_env(env, episodic, max_episode_steps, log_dir, idx)
+            env = _wrap_env(env, episodic, max_episode_steps, log_dir, idx, wrappers)
             return env
 
         if 1 < num_envs:
@@ -50,6 +51,7 @@ class GymEnvironment(AbstractEnvironment):
         self.env.seed(seed)
         self.env_name = env_name
         self.kwargs = kwargs
+        self.wrappers = wrappers or []
 
         if num_states > -1:
             num_states += 1  # Add a terminal state.
@@ -69,6 +71,7 @@ class GymEnvironment(AbstractEnvironment):
     def add_wrapper(self, wrapper, **kwargs):
         """Add a wrapper for the environment."""
         self.env = wrapper(self.env, **kwargs)
+        self.wrappers.append(wrapper)
 
         dim_action, num_actions = parse_space(self.env.action_space)
         dim_state, num_states = parse_space(self.env.observation_space)
@@ -89,6 +92,7 @@ class GymEnvironment(AbstractEnvironment):
     def pop_wrapper(self):
         """Pop last wrapper."""
         self.env = self.env.env
+        self.wrappers.pop(-1)
 
         dim_action, num_actions = parse_space(self.env.action_space)
         dim_state, num_states = parse_space(self.env.observation_space)
@@ -174,14 +178,16 @@ class GymEnvironment(AbstractEnvironment):
         return self.env_name
 
 
-def _wrap_env(env, episodic: int, max_episode_steps: int, log_dir=None, idx=0):
+def _wrap_env(
+    env, episodic: int, max_episode_steps: int, log_dir=None, idx=0, wrappers=None
+):
     # Time limit is controlled not when gym registration but by argument
     if isinstance(env, TimeLimit) and (not episodic):
         env = env.unwrapped
-    if not isinstance(env, TimeLimit) and 0 < max_episode_steps:
-        env = TimeLimit(env, max_episode_steps=max_episode_steps)
-    # Wrap with montior wrapper
+    # Wrap with Monitor wrapper
     if log_dir is not None and isinstance(log_dir, str):
         # TODO: Deal with issues when env is mujoco
         env = Monitor(env, directory=log_dir, uid=idx)
+    for wrapper in wrappers or []:
+        env = wrapper(env)
     return env
