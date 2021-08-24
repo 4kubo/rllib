@@ -158,10 +158,9 @@ def update_parameters(target_module, new_module, tau=0.0):
                 if target_state_dict[name].data.ndim == 0:
                     target_state_dict[name].data = new_state_dict[name].data
                 else:
-                    target_state_dict[name].data[:] = (
-                        tau * target_state_dict[name].data
-                        + (1 - tau) * new_state_dict[name].data
-                    )
+                    target_state_dict[name].data[:] = (1 - tau) * target_state_dict[
+                        name
+                    ].data + tau * new_state_dict[name].data
 
         # It is not necessary to load the dict again as it modifies the pointer.
         # target_module.load_state_dict(target_state_dict)

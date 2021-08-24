@@ -56,7 +56,7 @@ class IntegrateQValueFunction(AbstractValueFunction):
             out_dim = None
 
         final_v = integrate(
-            lambda a: self.q_function(state, a),
+            lambda a: self.q_function(state, a * self.policy.action_scale),
             pi,
             out_dim=out_dim,
             num_samples=self.num_samples,

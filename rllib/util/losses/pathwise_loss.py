@@ -60,7 +60,7 @@ class PathwiseLoss(nn.Module):
                 q = q[..., 0]
 
         # Take mean over time coordinate.
-        if q.dim() < 1:
+        if 1 < q.dim():
             q = q.mean(dim=1)
 
         return Loss(policy_loss=-q)

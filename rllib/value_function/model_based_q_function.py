@@ -6,7 +6,6 @@ from rllib.algorithms.abstract_mb_algorithm import AbstractMBAlgorithm
 from rllib.util.neural_networks.utilities import DisableGradient, unfreeze_parameters
 from rllib.util.utilities import RewardTransformer
 from rllib.util.value_estimation import mc_return
-
 from .abstract_value_function import AbstractQFunction
 from .integrate_q_value_function import IntegrateQValueFunction
 
@@ -45,7 +44,7 @@ class ModelBasedQFunction(AbstractQFunction):
         **kwargs,
     ):
         super().__init__(
-            dim_state=value_function.dim_state,
+            dim_state=dynamical_model.dim_state,
             dim_action=dynamical_model.dim_action,
             *args,
             **kwargs,
@@ -107,5 +106,5 @@ class ModelBasedQFunction(AbstractQFunction):
             )
 
         v = v.reshape(self.sim.num_samples, state.shape[0], -1).mean(0)
-        v = v[:, 0]  # In cases of ensembles return first component.
+        v = v[:, :1]  # In cases of ensembles return first component.
         return v

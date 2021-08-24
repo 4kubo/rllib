@@ -44,7 +44,11 @@ class TD3Agent(DPGAgent):
         if critic is None:
             critic = NNEnsembleQFunction.default(environment)
         if exploration_noise is None:
-            noise = Constant(0.1)
+            exploration_noise = Constant(0.1)
         return super().default(
-            environment, critic=critic, exploration_noise=noise, *args, **kwargs
+            environment,
+            critic=critic,
+            exploration_noise=exploration_noise,
+            *args,
+            **kwargs,
         )
