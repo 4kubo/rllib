@@ -1,7 +1,5 @@
 """MPC Algorithms."""
 
-import torch
-
 from rllib.util.value_estimation import mb_return
 
 from .random_shooting import RandomShooting
@@ -30,21 +28,33 @@ class PolicyShooting(RandomShooting):
 
     def forward(self, state, **kwargs):
         """Get best action."""
-        self.dynamical_model.eval()
+        if self.training:
+            returns, trajectory = mb_return(
+                state,
+                dynamical_model=self.dynamical_model,
+                reward_model=self.reward_model,
+                policy=self.policy,
+                num_steps=self.horizon,
+                gamma=self.gamma,
+                num_samples=self.num_samples,
+                value_function=self.terminal_reward,
+                termination_model=self.termination_model,
+                reduction="mean",
+            )
+            returns = returns.reshape((-1, self.num_samples)).squeeze(0)
+            actions = trajectory.action
 
-        value, trajectory = mb_return(
-            state,
-            dynamical_model=self.dynamical_model,
-            reward_model=self.reward_model,
-            policy=self.policy,
-            num_steps=self.horizon,
-            gamma=self.gamma,
-            num_samples=self.num_samples,
-            value_function=self.terminal_reward,
-            termination_model=self.termination_model,
-        )
-        actions = trajectory.action
-        idx = torch.topk(value, k=self.num_elites, largest=True)[1]
+            # Reshape to match with `get_best_action` method
+            actions = actions.reshape(
+                (-1, self.num_samples, self.horizon, *self.dynamical_model.dim_action)
+            )
+            permute_dim = actions.dim() - len(self.dynamical_model.dim_action)
+            permute_shape = (permute_dim - 1, *list(range(permute_dim - 1)), -1)
+            actions = actions.permute(*permute_shape)
+            elite_actions = self.get_best_action(actions, returns).mean(-2)
 
-        # Return first action and the mean over the elite samples.
-        return actions[0, idx].mean(0)
+            # Return first action and the mean over the elite samples.
+            return elite_actions, returns, trajectory
+        else:
+            elite_actions = self.policy(state)[0].unsqueeze(0)
+            return elite_actions, None, None
