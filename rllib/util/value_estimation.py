@@ -156,9 +156,7 @@ def n_step_return(
                 final_value = final_value.mean(-1)
             elif reduction == "none":
                 num_q = final_value.shape[-1]
-                value = value.unsqueeze(-1).repeat_interleave(
-                    final_value.shape[-1], dim=-1
-                )
+                value = value.unsqueeze(-1).repeat_interleave(num_q, dim=-1)
                 discount = discount.unsqueeze(-1).repeat_interleave(num_q, dim=-1)
                 not_done = not_done.unsqueeze(-1).repeat_interleave(num_q, dim=-1)
             else:
@@ -210,8 +208,8 @@ def mc_return(
     )
     steps = returns.shape[1]  # Batch x T x num_q
     if steps == 1 or lambda_ == 1.0:
-        if returns.ndim == 2:
-            return returns[:, -1]
+        if returns.ndim == 2 or reduction != "none":
+            return returns[..., -1]
         else:
             return returns[..., -1, :]
     else:
@@ -297,7 +295,8 @@ def mb_return(
     Sample-based learning and search with permanent and transient memories. ICML.
     """
     # Repeat states to get a better estimate of the expected value
-    state = repeat_along_dimension(state, number=num_samples, dim=0)
+    state = repeat_along_dimension(state, number=num_samples, dim=-2)
+    state = state.reshape(-1, *dynamical_model.dim_state)
     trajectory = rollout_model(
         dynamical_model=dynamical_model,
         reward_model=reward_model,
