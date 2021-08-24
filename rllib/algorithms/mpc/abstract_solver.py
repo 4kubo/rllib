@@ -63,9 +63,11 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         **kwargs,
     ):
         super().__init__()
-        self.dynamical_model = dynamical_model
-        self.reward_model = reward_model
-        self.termination_model = termination_model
+        self._submodules = {
+            "dynamical_model": dynamical_model,
+            "reward_model": reward_model,
+            "termination_model": termination_model,
+        }
 
         assert self.dynamical_model.model_kind == "dynamics"
         assert self.reward_model.model_kind == "rewards"
@@ -205,12 +207,6 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
 
         return self.mean, returns, trajectory
 
-    def state_dict(self, destination=None, prefix="", keep_vars=False):
-        return {}
-
-    def load_state_dict(self, state_dict, strict=True):
-        pass
-
     def reset(self, state=None, warm_action=None):
         """Reset warm action."""
         self.mean = warm_action
@@ -236,3 +232,15 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         else:
             self._device = self.action_scale.device
             return self._device
+
+    @property
+    def dynamical_model(self):
+        return self._submodules["dynamical_model"]
+
+    @property
+    def reward_model(self):
+        return self._submodules["reward_model"]
+
+    @property
+    def termination_model(self):
+        return self._submodules["termination_model"]

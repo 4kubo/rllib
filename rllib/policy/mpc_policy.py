@@ -40,9 +40,3 @@ class MPCPolicy(AbstractPolicy):
     def set_goal(self, goal=None):
         """Set goal."""
         self.solver.reward_model.set_goal(goal)
-
-    def state_dict(self, *args, **kwargs):
-        return {}
-
-    def load_state_dict(self, *args, **kwargs):
-        pass
