@@ -279,7 +279,7 @@ def sample_mean_and_cov(sample, diag=False, device=None):
                 jitter = jitter.to(device)
             sigma += jitter  # Add some jitter.
         covariance = sigma / num_samples
-    mean = mean.squeeze(-1)
+    mean = mean.squeeze(-2)
 
     return mean, covariance
 

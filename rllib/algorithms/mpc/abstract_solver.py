@@ -6,7 +6,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from rllib.dataset.utilities import stack_list_of_tuples
 from rllib.util.rollout import rollout_actions
 from rllib.util.value_estimation import discount_sum
 
@@ -39,8 +38,8 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         Whether or not to start the optimization with a warm start.
     default_action: str, optional.
          Default action behavior.
-    num_cpu: int, optional.
-        Number of CPUs to run the solver.
+    num_part: int, optional.
+        The number of particles for taking averages of action's expected reward.
     """
 
     def __init__(
@@ -58,7 +57,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         clamp=True,
         default_action="zero",
         action_scale=1.0,
-        num_cpu=1,
+        num_part=20,
         *args,
         **kwargs,
     ):
@@ -79,6 +78,8 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
 
         self.num_mpc_iter = num_mpc_iter
         self.num_samples = num_action_samples
+        self.num_part = num_part
+
         self.terminal_reward = terminal_reward
         self.warm_start = warm_start
         self.default_action = default_action
@@ -113,10 +114,10 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         -------
         returns: Tensor
             Tensor of dimension [batch_size x num_samples]
-        trajectory: list
+        steps: list
             In length of horizon where each in batch_size x num_samples `Observation`
         """
-        trajectory = rollout_actions(
+        steps = rollout_actions(
             self.dynamical_model,
             self.reward_model,
             self.action_scale.data * action_sequence,  # scale actions.
@@ -125,13 +126,16 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
             device=self.device,
         )
 
-        observations = stack_list_of_tuples(trajectory, dim=-2)
-        returns = discount_sum(observations.reward, self.gamma, device=self.device)
+        rewards = torch.stack(
+            [step.reward.reshape(-1, self.num_part).mean(1) for step in steps], dim=1
+        )
+        returns = discount_sum(rewards, self.gamma, device=self.device)
 
-        if self.terminal_reward:
-            terminal_reward = self.terminal_reward(observations.next_state[..., -1, :])
-            returns = returns + self.gamma ** self.horizon * terminal_reward
-        return returns, trajectory
+        # TODO: Deal with the case for terminal_reward even if termination is not at `self.horizon`
+        # if self.terminal_reward:
+        #     terminal_reward = self.terminal_reward(observations.next_state[..., -1, :])
+        #     returns = returns + self.gamma ** self.horizon * terminal_reward
+        return returns, steps
 
     @abstractmethod
     def get_candidate_action_sequence(self):
@@ -193,35 +197,40 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
 
         state = state.repeat(self._repeat_shape)
 
-        returns, trajectory = None, None
+        returns, steps = None, None
         for _ in range(self.num_mpc_iter):
-            action_candidates = self.get_candidate_action_sequence()
-            returns, trajectory = self.evaluate_action_sequence(
-                action_candidates.reshape(self.horizon, -1, self.dim_action), state
+            (
+                action_candidates,
+                action_candidates_eval,
+            ) = self.get_candidate_action_sequence()
+            returns, steps = self.evaluate_action_sequence(
+                action_candidates_eval, state
             )
             elite_actions = self.get_best_action(action_candidates, returns)
             self.update_sequence_generation(elite_actions)
 
         if self.clamp:
-            return self.mean.clamp(-1.0, 1.0), returns, trajectory
+            return self.mean.clamp(-1.0, 1.0), returns, steps
 
-        return self.mean, returns, trajectory
+        return self.mean, returns, steps
 
     def reset(self, state=None, warm_action=None):
         """Reset warm action."""
         self.mean = warm_action
-        self._repeat_shape = (self.num_samples, max(1, state.ndim - 1))
+        self._repeat_shape = (self.num_samples * self.num_part, max(1, state.ndim - 1))
         # Set prediction strategy for trajectory sampling
         if state is not None:
             assert isinstance(state, np.ndarray)
             prop_type = self.dynamical_model.get_prediction_strategy()
             if state.ndim == 1:
                 dims_sample = list(state.shape)
-                sample_shape = [self.num_samples] + dims_sample
+                sample_shape = [self.num_samples * self.num_part] + dims_sample
             else:
                 n_batch = state.shape[0]
                 dims_sample = list(state.shape[1:])
-                sample_shape = [n_batch * self.num_samples] + dims_sample
+                sample_shape = [
+                    n_batch * self.num_samples * self.num_part
+                ] + dims_sample
             self.dynamical_model.set_prediction_strategy(prop_type, sample_shape)
             self.reward_model.set_prediction_strategy(prop_type, sample_shape)
 

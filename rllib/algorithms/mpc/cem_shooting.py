@@ -1,7 +1,7 @@
 """MPC Algorithms."""
 
 import torch
-from torch.distributions import MultivariateNormal
+from scipy.stats import truncnorm
 
 from rllib.util.utilities import sample_mean_and_cov
 from .abstract_solver import MPCSolver
@@ -61,15 +61,30 @@ class CEMShooting(MPCSolver):
         -------
         candidate actions: Tensor.
             Tensor of dimension [horizon, batch_size, num_samples, dim_action]
+        candidate actions to be evaluated by rollout: Tensor.
+            Tensor of dimension [horizon, batch_size x num_samples, dim_action]
         """
-        action_distribution = MultivariateNormal(self.mean, self.covariance)
-        action_sequence = action_distribution.sample((self.num_samples,))
+        action_sequence = truncated_norm([self.num_samples] + list(self.mean.shape))
+
+        low = torch.ones_like(self.mean) + self.mean
+        upper = torch.ones_like(self.mean) - self.mean
+        mv = torch.min(torch.square(low), torch.square(upper))
+        constrained_var = torch.min(mv, self.covariance.diagonal(dim1=-2, dim2=-1))
+        action_sequence = action_sequence * torch.sqrt(
+            constrained_var.unsqueeze(0)
+        ) + self.mean.unsqueeze(0)
+
         action_sequence = action_sequence.permute(
             tuple(torch.arange(1, action_sequence.dim() - 1)) + (0, -1)
-        )
+        ).contiguous()
+        # Repeat action samples to be taken average
+        action_sequence_eval = torch.repeat_interleave(
+            action_sequence, self.num_part, dim=1
+        ).view(self.horizon, -1, self.dim_action)
         if self.clamp:
-            return action_sequence.clamp(-1.0, 1.0)
-        return action_sequence
+            action_sequence.clamp_(-1.0, 1.0)
+            action_sequence_eval.clamp_(-1.0, 1.0)
+        return action_sequence, action_sequence_eval
 
     def get_best_action(self, action_sequence, returns):
         """Get best action by averaging the num_elites samples.
@@ -100,3 +115,9 @@ class CEMShooting(MPCSolver):
         new_mean, new_cov = sample_mean_and_cov(elite_actions, device=device)
         self.mean = self.alpha * self.mean + (1 - self.alpha) * new_mean
         self.covariance = self.alpha * self.covariance + (1 - self.alpha) * new_cov
+
+
+def truncated_norm(size):
+    """Helper function for initial actions"""
+    values = truncnorm.rvs(-2, 2, size=size)
+    return torch.from_numpy(values).to(dtype=torch.get_default_dtype())
