@@ -69,6 +69,7 @@ def integrate(function, distribution, out_dim=None, num_samples=15):
     -------
     integral value.
     """
+    device = "cpu"
     batch_size = distribution.batch_shape
     if out_dim is None:
         ans = torch.zeros(batch_size)
@@ -77,8 +78,9 @@ def integrate(function, distribution, out_dim=None, num_samples=15):
 
     if distribution.has_enumerate_support:
         for action in distribution.enumerate_support():
-            prob = distribution.probs.gather(-1, action.unsqueeze(-1))
-            f_val = function(action)
+            prob = distribution.probs.gather(-1, action.unsqueeze(-1)).to("cpu")
+            f_val = function(action).to("cpu")
+            device = f_val.device
             if out_dim is None:
                 prob = prob.squeeze(-1)
             ans += prob.detach() * f_val
@@ -89,11 +91,12 @@ def integrate(function, distribution, out_dim=None, num_samples=15):
                 action = distribution.rsample()
             else:
                 action = distribution.sample()
-            f_val = function(action)
+            device = action.device
+            f_val = function(action).to("cpu")
             if f_val.ndim > ans.ndim:
                 f_val = f_val.squeeze(-1)
             ans += f_val / num_samples
-    return ans
+    return ans.to(device)
 
 
 def mellow_max(values, omega=1.0):

@@ -57,6 +57,8 @@ def step_model(
     device="cpu",
 ):
     """Perform a single step in an dynamical model."""
+    device = state.device
+
     # Sample a next state
     next_state_out = dynamical_model(state, action)
     next_state_distribution = tensor_to_distribution(next_state_out)
@@ -317,9 +319,10 @@ def rollout_model(
 
     TODO: Parallelize it!.
     """
+    device = initial_state.device
     trajectory = list()
     state = initial_state
-    done = torch.full(state.shape[:-1], False, dtype=torch.bool)
+    done = torch.full(state.shape[:-1], False, dtype=torch.bool, device=device)
 
     assert max_steps > 0
     for i in range(max_steps):

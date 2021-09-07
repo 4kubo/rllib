@@ -70,8 +70,8 @@ class CEMShooting(MPCSolver):
         upper = torch.ones_like(self.mean) - self.mean
         mv = torch.min(torch.square(low), torch.square(upper))
         constrained_var = torch.min(mv, self.covariance.diagonal(dim1=-2, dim2=-1))
-        action_sequence = action_sequence * torch.sqrt(
-            constrained_var.unsqueeze(0)
+        action_sequence = action_sequence.to(self.device) * torch.sqrt(
+            constrained_var.unsqueeze(0).to(self.device)
         ) + self.mean.unsqueeze(0)
 
         action_sequence = action_sequence.permute(

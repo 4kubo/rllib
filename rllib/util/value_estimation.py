@@ -138,10 +138,12 @@ def n_step_return(
     while observation.reward.ndim < 2:
         observation.reward = observation.reward.unsqueeze(0)
     n_steps = observation.reward.shape[-1]
-    discount = torch.pow(torch.tensor(gamma), torch.arange(n_steps))
     rewards = (
         reward_transformer(observation.reward)
         + entropy_regularization * observation.entropy
+    )
+    discount = torch.pow(torch.tensor(gamma), torch.arange(n_steps)).to(
+        device=rewards.device
     )
     discounted_rewards = rewards * discount
     value = torch.cumsum(discounted_rewards, dim=-1)
