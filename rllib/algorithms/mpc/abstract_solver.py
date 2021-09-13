@@ -220,7 +220,7 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         self._repeat_shape = (self.num_samples * self.num_part, max(1, state.ndim - 1))
         # Set prediction strategy for trajectory sampling
         if state is not None:
-            assert isinstance(state, np.ndarray)
+            assert isinstance(state, (np.ndarray, torch.Tensor))
             prop_type = self.dynamical_model.get_prediction_strategy()
             if state.ndim == 1:
                 dims_sample = list(state.shape)
