@@ -331,7 +331,7 @@ def build_default_models(
     if termination_model is None:
         try:
             termination_model = environment.env.termination_model()
-        except AttributeError:
+        except (AttributeError, TypeError):
             pass
 
     return dynamical_model, reward_model, termination_model

@@ -1,8 +1,8 @@
 """Wrapper for Custom System Environments."""
+import torch
 from gym import Env
 
 from rllib.util.utilities import tensor_to_distribution
-
 from .abstract_environment import AbstractEnvironment
 
 
@@ -51,6 +51,9 @@ class SystemEnvironment(AbstractEnvironment, Env):
         """See `AbstractEnvironment.step'."""
         self._time += 1
         state = self.system.state  # this might be noisy.
+
+        state = torch.as_tensor(state, dtype=torch.get_default_dtype())
+        action = torch.as_tensor(action, dtype=torch.get_default_dtype())
         reward = float("nan")
         if self.reward is not None:
             reward = (

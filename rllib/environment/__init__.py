@@ -4,8 +4,8 @@ from gym.envs.registration import register
 import rllib.environment.mdps
 import rllib.environment.mujoco
 import rllib.environment.system_environment
+import rllib.environment.system_environments
 import rllib.environment.vectorized
-
 from .abstract_environment import AbstractEnvironment
 from .gym_environment import *
 from .mdp import *

@@ -1,4 +1,5 @@
 """Model implemented by querying an environment."""
+import numpy as np
 import torch
 
 from rllib.environment.gym_environment import GymEnvironment
@@ -11,6 +12,7 @@ VEC2ENV_NAME = {
     "VecDiscrete-CartPole-v0": "VecDiscrete-CartPole-v0",
     "VecContinuous-Acrobot-v0": "VecContinuous-Acrobot-v0",
     "VecDiscrete-Acrobot-v0": "VecDiscrete-Acrobot-v0",
+    "LQR-v0": "VecLQR-v0",
     # MuJoCo envs.
     "MBHalfCheetah-v0": "MBHalfCheetah-v0",
     "MBHumanoid-v0": "MBHumanoid-v0",
@@ -80,6 +82,8 @@ class EnvironmentModel(AbstractModel):
         self.environment.state = state
         next_state, reward, done, _ = self.environment.step(action)
         if self.model_kind == "dynamics":
+            if isinstance(next_state, np.ndarray):
+                next_state = torch.tensor(next_state, dtype=torch.get_default_dtype())
             return next_state, torch.zeros(1)
         elif self.model_kind == "rewards":
             return reward, torch.zeros(1)

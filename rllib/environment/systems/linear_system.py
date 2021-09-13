@@ -1,6 +1,8 @@
 """Implementation of a Linear Dynamical System."""
 
 import numpy as np
+import torch
+from gym import spaces
 
 from .abstract_system import AbstractSystem
 
@@ -19,10 +21,10 @@ class LinearSystem(AbstractSystem):
     """
 
     def __init__(self, a, b, c=None):
-        self.a = np.atleast_2d(a)
-        self.b = np.atleast_2d(b)
+        self.a = torch.atleast_2d(a)
+        self.b = torch.atleast_2d(b)
         if c is None:
-            c = np.eye(self.a.shape[0])
+            c = torch.eye(self.a.shape[0])
         self.c = c
 
         dim_state, dim_action = self.b.shape
@@ -35,15 +37,16 @@ class LinearSystem(AbstractSystem):
 
     def step(self, action):
         """See `AbstractSystem.step'."""
-        action = np.atleast_1d(action)
-        self.state = self.a @ self.state + self.b @ action
-        return self.c @ self.state
+        action = torch.atleast_2d(action)
+        self.state = torch.clamp(self.state @ self.a + action @ self.b.T, -2.0, 2.0)
+        return torch.clamp((self.state @ self.c).squeeze(0), -2.0, 2.0)
 
     def reset(self, state):
         """See `AbstractSystem.reset'."""
         self._time = 0
-        self.state = np.atleast_1d(state)
-        return self.c @ self.state
+        self.state = torch.tensor(state, dtype=torch.get_default_dtype())
+        # return (self.state @ self.c).numpy()
+        return self.state @ self.c
 
     @property
     def state(self):
@@ -53,3 +56,10 @@ class LinearSystem(AbstractSystem):
     @state.setter
     def state(self, value):
         self._state = value
+
+    @property
+    def observation_space(self):
+        """Return observation space."""
+        return spaces.Box(
+            np.array([-2] * self.dim_observation), np.array([2] * self.dim_observation)
+        )
