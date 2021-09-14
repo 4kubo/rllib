@@ -11,19 +11,30 @@ from rllib.reward.quadratic_reward import QuadraticReward
 class LQREnv(SystemEnvironment):
     """An environment of linear dynamical system and quadratic reward function."""
 
-    def __init__(self, dim_state, dim_action=None, ctrl_cost_weight=1.0):
+    def __init__(
+        self, dim_state, dim_action=None, ctrl_cost_weight=1.0, random_init=False
+    ):
         # System
         if dim_action is None:
             dim_action = dim_state
-        a = torch.eye(dim_state) * 1.0
+        a = torch.eye(dim_state) * (1.0 + 1 / np.sqrt(dim_state) * 0.1)
         b = torch.zeros((dim_state, dim_action))
         index = torch.tensor([[min(b.shape[1] - 1, i)] for i in range(b.shape[0])])
         b = torch.scatter(b, dim=1, index=index, value=1 / np.sqrt(dim_state))
         linear_system = LinearSystem(a, b)
 
-        initial_state = np.ones(dim_state) / np.sqrt(dim_state)
+        if random_init:
+
+            def initial_state():
+                state_init = np.random.randn((dim_state))
+                state_init /= np.linalg.norm(state_init)
+                return state_init
+
+        else:
+            initial_state = np.ones(dim_state) / np.sqrt(dim_state)
+
         # Reward function
-        q = torch.eye(dim_state, dtype=torch.float32) / np.sqrt(dim_state)
+        q = torch.eye(dim_state, dtype=torch.float32)
         r = torch.eye(dim_action, dtype=torch.float32) * ctrl_cost_weight
         reward_model = QuadraticReward(q, r)
         super(LQREnv, self).__init__(
@@ -36,7 +47,7 @@ class LQREnv(SystemEnvironment):
 
         # Rendering
         self._screen_width = 500
-        self._screen_unit = 200 * np.sqrt(dim_state)
+        self._screen_unit = 200
 
     def render(self, mode="human"):
         if self.viewer is None:

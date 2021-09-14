@@ -20,6 +20,9 @@ class LinearSystem(AbstractSystem):
         observation matrix.
     """
 
+    _action_scale = 0.1
+    _state_scale = 2.0
+
     def __init__(self, a, b, c=None):
         self.a = torch.atleast_2d(a)
         self.b = torch.atleast_2d(b)
@@ -58,8 +61,17 @@ class LinearSystem(AbstractSystem):
         self._state = value
 
     @property
+    def action_space(self):
+        """Return action space."""
+        return spaces.Box(
+            np.array([-self._action_scale] * self.dim_action),
+            np.array([self._action_scale] * self.dim_action),
+        )
+
+    @property
     def observation_space(self):
         """Return observation space."""
         return spaces.Box(
-            np.array([-2] * self.dim_observation), np.array([2] * self.dim_observation)
+            np.array([-self._state_scale] * self.dim_observation),
+            np.array([self._state_scale] * self.dim_observation),
         )
