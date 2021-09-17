@@ -52,7 +52,7 @@ class PathwiseLoss(nn.Module):
             return Loss()
         state = observation.state
         pi = tensor_to_distribution(self.policy(state), **self.policy.dist_params)
-        action = self.policy.action_scale * pi.rsample().clamp(-1, 1)
+        action = self.policy.action_scale * pi.rsample()
 
         with DisableGradient(self.critic):
             q = self.critic(state, action)
