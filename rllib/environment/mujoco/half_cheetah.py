@@ -12,7 +12,7 @@ except (ModuleNotFoundError, gym.error.DependencyNotInstalled):
 class MBHalfCheetahEnv(LocomotionEnv, HalfCheetahEnv):
     """Half-Cheetah Environment."""
 
-    def __init__(self, ctrl_cost_weight=0.1):
+    def __init__(self, ctrl_cost_weight=0.1, **kwargs):
         self.base_mujoco_name = "HalfCheetah-v3"
         LocomotionEnv.__init__(
             self,
@@ -22,6 +22,7 @@ class MBHalfCheetahEnv(LocomotionEnv, HalfCheetahEnv):
             forward_reward_weight=1.0,
             healthy_reward=0.0,
         )
-        HalfCheetahEnv.__init__(
-            self, ctrl_cost_weight=ctrl_cost_weight, forward_reward_weight=1.0
+        kwargs = dict(
+            kwargs, ctrl_cost_weight=ctrl_cost_weight, forward_reward_weight=1.0
         )
+        HalfCheetahEnv.__init__(self, **kwargs)
