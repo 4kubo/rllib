@@ -9,7 +9,6 @@ from rllib.util.neural_networks import (
     HeteroGaussianNN,
     one_hot_encode,
 )
-
 from .abstract_policy import AbstractPolicy
 
 
@@ -31,16 +30,19 @@ class NNPolicy(AbstractPolicy):
     """
 
     def __init__(
-        self,
-        layers=(200, 200),
-        biased_head=True,
-        non_linearity="Tanh",
-        squashed_output=True,
-        initial_scale=0.5,
-        input_transform=None,
-        jit_compile=False,
-        *args,
-        **kwargs,
+            self,
+            layers=(200, 200),
+            biased_head=True,
+            non_linearity="Tanh",
+            squashed_output=True,
+            initial_scale=0.5,
+            input_transform=None,
+            jit_compile=False,
+            log_scale=True,
+            max_scale=None,
+            min_scale=None,
+            *args,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.input_transform = input_transform
@@ -63,6 +65,9 @@ class NNPolicy(AbstractPolicy):
                 biased_head=biased_head,
                 squashed_output=squashed_output,
                 initial_scale=initial_scale,
+                log_scale=log_scale,
+                max_scale=max_scale,
+                min_scale=min_scale,
             )
         if jit_compile:
             self.nn = torch.jit.script(self.nn)

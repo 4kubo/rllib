@@ -25,15 +25,17 @@ class FeedForwardNN(nn.Module):
     """
 
     def __init__(
-        self,
-        in_dim,
-        out_dim,
-        layers=(),
-        non_linearity="Tanh",
-        biased_head=True,
-        squashed_output=False,
-        initial_scale=0.5,
-        log_scale=False,
+            self,
+            in_dim,
+            out_dim,
+            layers=(),
+            non_linearity="Tanh",
+            biased_head=True,
+            squashed_output=False,
+            initial_scale=0.5,
+            log_scale=False,
+            min_scale=None,
+            max_scale=None,
     ):
         super().__init__()
         self.kwargs = {
@@ -54,12 +56,12 @@ class FeedForwardNN(nn.Module):
         self.log_scale = log_scale
         if self.log_scale:
             init_scale_transformed = torch.log(torch.tensor([initial_scale]))
-            self._min_scale = -4
-            self._max_scale = 15
+            self._min_scale = min_scale or -20.0
+            self._max_scale = max_scale or 2.0
         else:
             init_scale_transformed = inverse_softplus(torch.tensor([initial_scale]))
-            self._min_scale = 1e-6
-            self._max_scale = 1
+            self._min_scale = min_scale or 1e-6
+            self._max_scale = max_scale or 1
 
         self._init_scale_transformed = nn.Parameter(
             init_scale_transformed, requires_grad=False
