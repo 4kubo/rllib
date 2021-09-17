@@ -45,9 +45,9 @@ class EntropyLoss(nn.Module):
                 eta = Constant(eta)
             self._eta = eta
         else:  # Trust-Region: || KL(\pi || Uniform) - target|| < \epsilon
-            if isinstance(eta, ParameterDecay):
-                eta = eta()
-            self._eta = Learnable(eta, positive=True)
+            if not isinstance(eta, ParameterDecay):
+                eta = Learnable(eta, positive=True)
+            self._eta = eta
 
     @property
     def eta(self):
