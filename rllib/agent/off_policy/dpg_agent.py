@@ -8,7 +8,6 @@ from rllib.algorithms.dpg import DPG
 from rllib.policy import NNPolicy
 from rllib.util.parameter_decay import Constant, OUNoise, ParameterDecay
 from rllib.value_function import NNQFunction
-
 from .off_policy_agent import OffPolicyAgent
 
 
@@ -72,9 +71,9 @@ class DPGAgent(OffPolicyAgent):
         super().train(val)
         self.policy.dist_params.update(add_noise=True)
 
-    def eval(self, val=True):
+    def eval(self):
         """Set the agent in evaluation mode."""
-        super().eval(val)
+        super().eval()
         # Set add_noise to false because tensor_to_distribution in the `act' method
         # will perturb the mean of the action distribution.
         self.policy.dist_params.update(add_noise=False)
