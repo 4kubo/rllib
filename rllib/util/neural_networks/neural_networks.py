@@ -25,17 +25,17 @@ class FeedForwardNN(nn.Module):
     """
 
     def __init__(
-            self,
-            in_dim,
-            out_dim,
-            layers=(),
-            non_linearity="Tanh",
-            biased_head=True,
-            squashed_output=False,
-            initial_scale=0.5,
-            log_scale=False,
-            min_scale=None,
-            max_scale=None,
+        self,
+        in_dim,
+        out_dim,
+        layers=(),
+        non_linearity="Tanh",
+        biased_head=True,
+        squashed_output=False,
+        initial_scale=0.5,
+        log_scale=False,
+        min_scale=None,
+        max_scale=None,
     ):
         super().__init__()
         self.kwargs = {
@@ -406,9 +406,12 @@ class Ensemble(HeteroGaussianNN):
             batch_rank = len(shape[:-1])
             dim_out = shape[-1]
 
-        indexes = torch.randint(self.num_heads, batch_shape, device=self.device)[
-            ..., None, None
-        ].repeat([1] * batch_rank + [dim_out, 1])
+        indexes = self._sample_idx_for_shape(batch_shape)
+        indexes = indexes[..., None, None].repeat([1] * batch_rank + [dim_out, 1])
+        return indexes
+
+    def _sample_idx_for_shape(self, batch_shape):
+        indexes = torch.randint(self.num_heads, batch_shape, device=self.device)
         return indexes
 
     @property
