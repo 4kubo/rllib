@@ -17,10 +17,10 @@ class LQREnv(SystemEnvironment):
         # System
         if dim_action is None:
             dim_action = dim_state
-        a = torch.eye(dim_state) * (1.0 + 1 / np.sqrt(dim_state) * 0.1)
+        a = torch.eye(dim_state) * 1.1
         b = torch.zeros((dim_state, dim_action))
         index = torch.tensor([[min(b.shape[1] - 1, i)] for i in range(b.shape[0])])
-        b = torch.scatter(b, dim=1, index=index, value=1 / np.sqrt(dim_state))
+        b = torch.scatter(b, dim=1, index=index, value=1.0)
         linear_system = LinearSystem(a, b)
 
         if random_init:
@@ -34,7 +34,7 @@ class LQREnv(SystemEnvironment):
             initial_state = np.ones(dim_state) / np.sqrt(dim_state)
 
         # Reward function
-        q = torch.eye(dim_state, dtype=torch.float32)
+        q = torch.eye(dim_state, dtype=torch.float32) * 2.0
         r = torch.eye(dim_action, dtype=torch.float32) * ctrl_cost_weight
         reward_model = QuadraticReward(q, r)
         super(LQREnv, self).__init__(
@@ -47,7 +47,7 @@ class LQREnv(SystemEnvironment):
 
         # Rendering
         self._screen_width = 500
-        self._screen_unit = 200
+        self._screen_unit = 150
 
     def render(self, mode="human"):
         if self.viewer is None:
@@ -75,8 +75,8 @@ class LQREnv(SystemEnvironment):
 
         x, y = torch.atleast_2d(self.system.state)[0, :2]
         self.circle_trans.set_translation(
-            x * self._screen_unit + self._screen_width / 2,
-            y * self._screen_unit + self._screen_width / 2,
+            x * self._screen_unit * np.sqrt(self.dim_state) + self._screen_width / 2,
+            y * self._screen_unit * np.sqrt(self.dim_state) + self._screen_width / 2,
         )
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
 
