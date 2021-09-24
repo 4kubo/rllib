@@ -79,8 +79,8 @@ class CEMShooting(MPCSolver):
         ).contiguous()
         # Repeat action samples to be taken average
         action_sequence_eval = torch.repeat_interleave(
-            action_sequence, self.num_part, dim=1
-        ).view(self.horizon, -1, self.dim_action)
+            action_sequence, self.num_part, dim=-2
+        ).view(self.horizon, -1, self.num_part * self.num_samples, self.dim_action)
         if self.clamp:
             action_sequence.clamp_(-1.0, 1.0)
             action_sequence_eval.clamp_(-1.0, 1.0)
@@ -107,7 +107,7 @@ class CEMShooting(MPCSolver):
             self.dim_action, -1
         )
         shape = (self.horizon, -1, self.num_samples, self.dim_action)
-        return torch.gather(action_sequence.view(shape), -2, idx).squeeze(1)
+        return torch.gather(action_sequence.view(shape), -2, idx)
 
     def update_sequence_generation(self, elite_actions):
         """Update distribution by the empirical mean and covariance of best actions."""

@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from rllib.dataset.utilities import stack_list_of_tuples
 from rllib.util.rollout import rollout_actions
 from rllib.util.value_estimation import discount_sum
 
@@ -127,7 +128,11 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
         )
 
         rewards = torch.stack(
-            [step.reward.reshape(-1, self.num_part).mean(1) for step in steps], dim=1
+            [
+                step.reward.reshape(-1, self.num_samples, self.num_part).mean(-1)
+                for step in steps
+            ],
+            dim=1,
         )
         returns = discount_sum(rewards, self.gamma, device=self.device)
 
@@ -192,10 +197,11 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
 
     def forward(self, state):
         """Return action that solves the MPC problem."""
-        batch_shape = state.shape[:-1]
+        batch_shape = state.shape[:-1] or [1]
         self.initialize_actions(batch_shape)
 
-        state = state.repeat(self._repeat_shape)
+        # state = self.repeat_init_state(state)
+        state = state.unsqueeze(-2).repeat((1, self.num_samples * self.num_part, 1))
 
         returns, steps = None, None
         for _ in range(self.num_mpc_iter):
@@ -210,29 +216,36 @@ class MPCSolver(nn.Module, metaclass=ABCMeta):
             self.update_sequence_generation(elite_actions)
 
         if self.clamp:
-            return self.mean.clamp(-1.0, 1.0), returns, steps
+            return self.mean.clamp(-1.0, 1.0).squeeze(1), returns, steps
 
-        return self.mean, returns, steps
+        return self.mean.squeeze(1), returns, steps
 
     def reset(self, state=None, warm_action=None):
         """Reset warm action."""
         self.mean = warm_action
-        self._repeat_shape = (self.num_samples * self.num_part, max(1, state.ndim - 1))
+        # self._repeat_shape = (self.num_samples * self.num_part, max(1, state.ndim - 1))
         # Set prediction strategy for trajectory sampling
+        self.single_proc = state.ndim == 1
         if state is not None:
             assert isinstance(state, (np.ndarray, torch.Tensor))
             prop_type = self.dynamical_model.get_prediction_strategy()
-            if state.ndim == 1:
+            if self.single_proc:
                 dims_sample = list(state.shape)
-                sample_shape = [self.num_samples * self.num_part] + dims_sample
+                sample_shape = [1, self.num_samples * self.num_part] + dims_sample
             else:
                 n_batch = state.shape[0]
                 dims_sample = list(state.shape[1:])
-                sample_shape = [
-                    n_batch * self.num_samples * self.num_part
-                ] + dims_sample
+                sample_shape = [n_batch, self.num_samples * self.num_part] + dims_sample
             self.dynamical_model.set_prediction_strategy(prop_type, sample_shape)
             self.reward_model.set_prediction_strategy(prop_type, sample_shape)
+
+    def repeat_init_state(self, init_state):
+        init_state = init_state.unsqueeze(-1)
+        if self.single_proc:
+            return init_state.repeat((self.num_samples * self.num_part, 1))
+        else:
+            return init_state.repeat((1, self.num_samples * self.num_part, 1))
+            # return init_state.repeat((self.num_samples * self.num_part, 1))
 
     @property
     def device(self):
