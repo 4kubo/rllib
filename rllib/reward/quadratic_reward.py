@@ -25,8 +25,13 @@ class QuadraticReward(AbstractModel):
     def forward(self, state, action, next_state):
         """See `abstract_reward.forward'."""
         device = state.device
+        shape = state.shape
         state_cost = torch_quadratic(
-            state - self.goal.to(device=device), self.q.to(device=device)
+            state.view(-1, self.dim_state[0]) - self.goal.to(device=device),
+            self.q.to(device=device),
         )
-        action_cost = torch_quadratic(action, self.r.to(device=device))
-        return -(state_cost + action_cost).squeeze(-1), torch.zeros(1)
+        action = action.view(-1, self.dim_action[0])
+        action_cost = torch_quadratic(
+            action[:, : self.dim_action[0]], self.r.to(device=device)
+        )
+        return -(state_cost + action_cost).view(shape[:-1]).squeeze(-1), torch.zeros(1)
